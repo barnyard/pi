@@ -1,0 +1,10 @@
+<project name="p2p-app" default="default">
+
+	<!-- user-specific properties + default values -->
+	<property file="properties/${user.name}.properties" />
+	<property file="properties/build.properties" />
+
+	<property name="findbugs.excludes.file" value="etc/findbugs/exclusions.xml" />
+
+	<import file="${p2p-build.base}/build.xml" />
+</project>

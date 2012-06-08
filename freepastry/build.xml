@@ -1,0 +1,94 @@
+<project name="freepastry" default="default" basedir="./" xmlns:ivy="antlib:org.apache.ivy.ant">
+
+	<target name="default" depends="clean, test, jar"/>
+
+	<!-- Necessary properties and paths -->
+	<property name="junit.tests" value="**/EpochTest.java,**/MagicNumberTest.java,**/PriorityTransportLayerImplMockTest.java,**/WireTest.java" />
+	<property name="src.dir" value="src" />
+	<property name="jar.dir" value="jars" />
+	<property name="license.dir" value="license" />
+	<property name="build.dir" value="build/classes/main" />
+	<property name="lib.dir" value="lib" />
+	<property name="pretty.dir" value="pretty" />
+	<property name="pretty.lib.dir" value="pretty/lib" />
+	<property name="docs.dir" value="docs" />
+	<property name="javadoc.dir" value="${docs.dir}/javadoc" />
+	<property name="license.file" value="License.txt" />
+	<property name="license.path" value="${license.dir}/${license.file}" />
+	<property name="freepastry-version" value="2.1" />
+
+	<!-- user-specific properties + default values -->
+	<property file="properties/${user.name}.properties" />
+	<property file="properties/build.properties" />
+
+	<import file="${p2p-build.base}/build.xml" />
+
+	<!-- Jars that Pretty package needs -->
+	<path id="pretty.classpath">
+		<fileset dir="${pretty.lib.dir}">
+			<include name="**/*.jar" />
+		</fileset>
+	</path>
+
+	<!-- All the stuff that needs to be done before anything can happen -->
+	<target name="init">
+		<!-- make the directory to put all classes in -->
+		<mkdir dir="${build.dir}" />
+		<mkdir dir="build/classes/test" />
+	</target>
+
+	<target name="compile" depends="init, resolve-dependencies">
+		<javac srcdir="${src.dir}" includeantruntime="false" destdir="${build.dir}" includes="**/*.java" deprecation="no" debuglevel="lines,vars,source" debug="true">
+			<classpath>
+				<path refid="test.classpath" />
+				<path refid="main.classpath" />
+			</classpath>
+		</javac>
+	</target>
+
+	<target name="test" depends="compile">
+		<property name="junit.dir" value="build/classes/junit" />
+		<mkdir dir="${junit.dir}" />
+		<junit printsummary="yes" showoutput="yes" failureproperty="test.fail" fork="yes" maxmemory="1024m" clonevm="true">
+			<classpath refid="test.classpath" />
+			<classpath refid="main.classpath" />
+			<classpath location="etc" />
+			<formatter type="plain" />
+			<formatter type="xml" />
+			<batchtest fork="yes" todir="${junit.dir}">
+				<fileset dir="src" includes="${junit.tests}" />
+			</batchtest>
+		</junit>
+		<fail if="test.fail" message="1 or more tests have failed" />
+	</target>
+
+
+	<target name="compileappend" depends="init">
+		<javac srcdir="${pretty.lib.dir}" destdir="." deprecation="yes" debuglevel="lines,vars,source" debug="true">
+		</javac>
+	</target>
+
+	<target name="appendlicense" depends="compileappend">
+		<taskdef name="append" classname="Append" classpath="." />
+		<append srcfile="${license.path}">
+			<fileset dir="${src.dir}" includes="**/*.java" />
+		</append>
+	</target>
+
+	<!-- Distribution-related targets -->
+
+	<target name="jar" depends="compile">
+		<available file="build/classes/main" property="build.classes.main.exists" value="true" />
+		<jar destfile="build/${ant.project.name}.jar">
+			<fileset dir="build/classes/main" />
+			<fileset dir="etc" includes="freepastry.params" />
+		</jar>
+	</target>
+
+	<target name="publish" depends="jar" unless="publish.skip">
+		<available file="build/${ant.project.name}.jar" property="artifact.exists" value="true" />
+		<antcall target="-dist" />
+		<antcall target="-publish" />
+	</target>
+
+</project>

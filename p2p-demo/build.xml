@@ -1,0 +1,57 @@
+<project name="p2p-demo" default="zip">
+
+	<!-- user-specific properties + default values -->
+	<property file="properties/${user.name}.properties" />
+	<property file="properties/build.properties" />
+
+	<import file="${p2p-build.base}/build.xml" />
+
+	<target name="ci" depends="clean, zip" />
+
+	<path id="core.path">
+		<fileset dir="lib/main" includes="p2p-core*.jar" />
+	</path>
+
+	<target name="zip" depends="resolve-dependencies">
+		<mkdir dir="build/zip/lib" />
+		<copy todir="build/zip/lib">
+			<fileset dir="lib/main" excludes="*sources*, *.zip" />
+		</copy>
+		
+		<unzip dest="build/zip/docs" >
+			<fileset dir="lib/main" includes="p2p-core-docs*.zip"/>
+		</unzip>
+		
+		<mkdir dir="build/zip/src/main/java" />
+		<copy todir="build/zip/src/main/java">
+			<fileset dir="src/main/java" includes="**/*java" />
+		</copy>
+
+		<mkdir dir="build/zip/src/main/resources" />
+		<copy todir="build/zip/src/main/resources">
+			<fileset dir="src/main/resources" excludes=".project, .classpath, README.txt, *.sh" />
+		</copy>
+
+		<copy todir="build/zip" file="src/main/ant/build.xml" />
+		<copy todir="build/zip" file="src/main/resources/README.txt" />
+		<copy todir="build/zip" file="src/main/resources/.project" />
+		<copy todir="build/zip" file="src/main/resources/run.sh" />
+		<copy todir="build/zip" file="src/main/resources/run_multiple_nodes.sh" />
+		<copy todir="build/zip" file="src/main/resources/compile.sh" />
+
+		<pathconvert property="temp.path" refid="core.path">
+			<map from="${core.path}" to="${temp.path}" />
+		</pathconvert>
+		<basename property="core.jar" file="${temp.path}" />
+
+		<copy todir="build/zip" file="src/main/resources/.classpath">
+			<filterset>
+				<filter token="CORE" value="${core.jar}" />
+			</filterset>
+		</copy>
+
+		<zip destfile="build/${ant.project.name}.zip">
+			<fileset dir="build/zip" />
+		</zip>
+	</target>
+</project>

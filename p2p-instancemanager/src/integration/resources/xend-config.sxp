@@ -1,0 +1,8 @@
+(xend-unix-server yes)
+(xend-unix-path /var/lib/xend/xend-socket)
+(xend-relocation-hosts-allow '^localhost$ ^localhost\\.localdomain$')
+(network-script 'rocks-network-bridge')
+(vif-script vif-bridge)
+(dom0-cpus 1)
+(vncpasswd '')
+(dom0-min-mem 768)

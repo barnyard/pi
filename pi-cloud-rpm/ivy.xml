@@ -1,0 +1,14 @@
+<ivy-module version="2.0" xmlns:m="http://ant.apache.org/ivy/maven">
+	<info organisation="bt" module="pi-cloud-rpm" />
+	<configurations>
+		<conf name="main" />
+		<conf name="tools" />
+	</configurations>
+	<publications>
+		<artifact name="pi-cloud" type="rpm" conf="main" />
+	</publications>
+	<dependencies>
+        <dependency name="pi-ops-website" rev="latest.integration" conf="main->main" />
+        <dependency name="pi-tools" rev="latest.integration" transitive="false" conf="tools->main" />
+	</dependencies>
+</ivy-module>

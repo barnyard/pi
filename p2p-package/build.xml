@@ -1,0 +1,157 @@
+<?xml version="1.0"?>
+<!--
+This Ant build file is for packaging. It MUST NOT have anything related to pe-build in it!
+-->
+<project name="p2p-package" default="rpm" basedir=".">
+    <taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
+
+    <property environment="env"/>    
+	<property name="lib" location="lib" />
+	<property name="build" location="build" />
+	<property name="dist" location="dist" />
+    <property name="applications" location="applications" />
+    <property name="p2p-core" location="p2p-core" />   
+    
+
+	<property file="properties/${user.name}.properties" />
+	<property file="properties/build.properties" />
+
+	<target name="clean">
+		<delete dir="${build}" />
+		<delete dir="${dist}" />
+        <delete dir="${applications}" />
+        <delete dir="${p2p-core}" />
+	</target>
+
+	<target name="init" depends="clean">
+		<mkdir dir="${build}" />
+        <mkdir dir="${applications}"/>
+        <mkdir dir="${dist}"/>
+        <mkdir dir="${p2p-core}"/>
+	</target>
+
+    <target name="copy-single-app">
+        <mkdir dir="${applications}/${p2p.app}"/>        
+        <get src="http://${hudson.address}/${p2p.app}/zips/${p2p.app}.zip"  dest="${applications}/${p2p.app}/${p2p.app}.zip" verbose="true" usetimestamp="true"/>
+        <unzip src="${applications}/${p2p.app}/${p2p.app}.zip" dest="${applications}/${p2p.app}" overwrite="true"/>     
+        <echo> Copying ${p2p.app} libs </echo>
+        <copy todir="./build/applications/${p2p.app}" flatten="true" overwrite="true">
+           <fileset dir="${applications}/${p2p.app}" includes="**/*.jar"/>           
+           <fileset dir="${applications}/${p2p.app}" includes="**/*.properties"/>  
+           <fileset dir="${applications}/${p2p.app}" includes="**/*.sh"/>  
+           <fileset dir="${applications}/${p2p.app}" includes="**/*.ftl"/>  
+        </copy>
+        <echo> Copying application appContext files</echo>
+        <copy file="${applications}/${p2p.app}/applicationContext.xml" tofile="./build/applications/${p2p.app}/applicationContext.xml" verbose="true" overwrite="true" failonerror="false"/>        
+        <copy file="${applications}/${p2p.app}/applicationContext-*.xml" tofile="./build/applications/${p2p.app}/applicationContext.xml" verbose="true" overwrite="true" failonerror="false"/>
+    </target>
+    
+    <target name="copy-apps">
+        <echo> Beginning copy for applications ${p2p.applications} </echo>
+        <foreach list="${p2p.applications}" delimiter="," param="p2p.app" target="copy-single-app" inheritall="true"/>   
+        <echo> Pulling down latest p2p-core</echo>
+        <get src="http://${hudson.address}/p2p-core/zips/p2p-core.zip"  dest="p2p-core/p2p-core.zip" verbose="true" usetimestamp="true"/>
+        <unzip src="./p2p-core/p2p-core.zip" dest="./p2p-core" overwrite="true"/>     
+        <echo> Copying core common files</echo>        
+        <copy todir="./build" verbose="true" overwrite="true">
+           <fileset dir="./p2p-core" includes="**/applicationContext.xml"/>                   
+           <fileset dir="./p2p-core" includes="*.params"/>           
+           <fileset dir="./p2p-core" includes="*.properties"/>   
+           <fileset dir="./p2p-core" includes="**/*.jar"/>  
+        </copy>
+        <echo> Copying core jar file</echo>
+        <copy file="./p2p-core/p2p-core.jar" todir="build"  overwrite="true"/>                        
+    </target>
+    
+	<target name="zip" depends="init,copy-apps">
+		<echo> Zipping App scructure </echo>
+        <zip destfile="${dist}/p2p-overlay.zip" basedir="${build}"/>
+        <echo> Moving files to install dir </echo>
+        <copy todir="${install.dir}">
+            <fileset dir="${build}"/>
+        </copy>
+	</target>
+    
+    
+    <target name="create.koala.sh">
+        <copy file="${p2p-core}/koalap2p.sh" tofile="${build}/scripts/koalap2p.sh" />
+    </target>
+    
+    <target name="create.koala.env.files">
+        <propertycopy name="bind.regex" from="${deployment.environment}.bind.regex" silent="true"/>
+        <propertycopy name="bootstraps" from="${deployment.environment}.bootstraps" silent="true"/>
+        <propertycopy name="jmx.port" from="${deployment.environment}.jmx.port" silent="true"/>
+    	<propertycopy name="p2p.http.port" from="${deployment.environment}.http.port" silent="true"/>        
+    	<propertycopy name="isfrontend" from="${deployment.environment}.is.frontend" silent="true"/>
+    	<propertycopy name="isNotfrontend" from="${deployment.environment}.is.not.frontend" silent="true"/>
+    	<!-- This is if you are packaging locally. -->
+    	<propertycopy name="p2p.http.port" from="${http.port}" silent="true"/>
+        <!-- Set default values -->
+        <property name="bind.regex" value="^10.*"/>
+        <property name="bootstraps" value="127.0.0.1:4524"/>
+        <property name="jmx.port" value="45243"/>
+    	<property name="p2p.http.port" value="8585"/>
+        <property name="frontendHost" value="${deployment.environment}"/>
+    	<property name="isfrontend" value="false"/>
+    	<property name="isNotfrontend" value="true"/>
+    	    	
+        <!-- Use the values -->
+        <echo> Setting values for environment ${deployment.environment} </echo>
+        <echo> bind.regex = ${bind.regex} </echo>
+        <echo> bootstraps = ${bootstraps} </echo>
+    	<echo> http port = ${p2p.http.port} </echo>
+    	<echo> jmx port = ${jmx.port} </echo>
+        <echo> frontend = ${frontendHost} </echo>
+    	<echo> isFrontEnd = ${isfrontend} </echo>
+        <echo> isNotFrontEnd = ${isNotfrontend} </echo>
+    	<echo> log.dir = ${log.dir} </echo>
+        <echo></echo>
+        <propertycopy name="jmx.port.params" from="${jmx.port}" silent="true"/>
+        <copy file="koala.params.template" verbose="true" tofile="${install.dir}/koala.${deployment.environment}.params">
+            <filterset>
+                <filter token="BOOTSTRAPS" value="${bootstraps}"/>
+                <filter token="BINDREGEX" value="${bind.regex}"/>
+                <filter token="HTTPPORT" value="${p2p.http.port}"/>
+                <filter token="JMXPORT2" value="${jmx.port}"/>
+                <filter token="FRONTEND" value="${frontendHost}"/>
+    			<filter token="ISFRONTEND" value="${isfrontend}"/>
+            	<filter token="ISNOTFRONTEND" value="${isNotfrontend}"/>
+            	<filter token="PASTRYLOGDIR" value="${log.dir}"/>            	
+            	<filter token="INSTALL_DIRECTORY" value="${install.dir}"/>            	
+            </filterset>            
+        </copy>
+        <copy file="koalap2p.sh.template" tofile="${install.dir}/scripts/koalap2p.${deployment.environment}.sh">
+            <filterset>
+                <filter token="JMXPORT" value="${jmx.port}"/>
+                <filter token="INSTALL_DIR" value="${install.dir}"/>
+            </filterset> 
+        </copy>        
+    </target>
+    
+    <target name="rpm" depends="zip">
+            
+		<!--replace_in_files "euca-#{EUCA_VERSION}.spec", '@BUILD_DIR@', dir_name -->
+        <delete failonerror="false">
+            <fileset dir="/usr/src/redhat/RPMS/x86_64/">
+                <include name="KoalaP2P*" />
+            </fileset>
+        </delete>
+        <copy file="p2p.spec.template" verbose="true" overwrite="true" filtering="true" tofile="/usr/src/redhat/SPECS/p2p-${p2p.version}.spec">
+            <filterchain>
+                <replacetokens>
+                    <token key="VERSION" value="${p2p.version}"/>
+                    <token key="RELEASE" value="${env.BUILD_NUMBER}"/>
+                    <token key="INSTALL_DIR" value="${install.dir}"/>
+                </replacetokens>
+            </filterchain>            
+        </copy>
+
+        
+        <foreach list="${deployment.environments}" delimiter="," param="deployment.environment" target="create.koala.env.files" inheritall="true"/>
+        <rpm
+        specFile="p2p-${p2p.version}.spec"
+        topDir="/usr/src/redhat"
+        cleanBuildDir="true"
+        failOnError="true"/>
+    </target>
+</project>

@@ -1,0 +1,22 @@
+# automatically generated config file for DHCP server
+default-lease-time 2400;
+max-lease-time 2400;
+ddns-update-style none;
+
+shared-network pi {
+
+# security group jon/default
+subnet 172.30.250.0 netmask 255.255.255.240 {
+	option subnet-mask 255.255.255.240;
+	option broadcast-address 172.30.250.15;
+	option domain-name-servers 147.149.2.5;
+	option routers 172.30.250.1;
+}
+
+# instance i-01g5g6xg
+host node-172.30.250.2 {
+	hardware ethernet 00:16:34:00:90:8c;
+	fixed-address 172.30.250.2;
+	option interface-mtu 1492;
+}
+}

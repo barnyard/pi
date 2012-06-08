@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+    xmlns:beans="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+                         http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+                        http://www.springframework.org/schema/security
+                         http://www.springframework.org/schema/security/spring-security-3.0.xsd">
+ 	 	
+	
+ 	<global-method-security secured-annotations="enabled" />
+ 
+    <http auto-config="true">
+    	<intercept-url pattern="/403*" filters="none" />
+    	<intercept-url pattern="/404*" filters="none" />
+    	<intercept-url pattern="/500*" filters="none" />
+    	
+    	<intercept-url pattern="/spring_security_login" access="IS_AUTHENTICATED_ANONYMOUSLY" />                
+        
+        <intercept-url pattern="/index*" access="ROLE_OPS,ROLE_MIS" />
+        
+        <intercept-url pattern="/dhtrecords/regions*" method="GET" access="ROLE_OPS,ROLE_MIS" />       
+        <intercept-url pattern="/dhtrecords/availabilityzones*" method="GET" access="ROLE_OPS,ROLE_MIS" />
+        <intercept-url pattern="/dhtrecords/instancetypes*" method="GET" access="IS_AUTHENTICATED_ANONYMOUSLY" />
+        <intercept-url pattern="/users/*/instancevalidation" method="GET" access="ROLE_OPS,ROLE_MIS" />
+        <intercept-url pattern="/users/*/instancevalidation" method="POST" access="ROLE_OPS,ROLE_MIS" />
+        <intercept-url pattern="/users/*/instancevalidation/**" method="GET" access="IS_AUTHENTICATED_ANONYMOUSLY" />
+        <intercept-url pattern="/users/*/instancevalidation/**" method="POST" access="IS_AUTHENTICATED_ANONYMOUSLY" />
+        <intercept-url pattern="/dhtrecords/**/*" access="ROLE_OPS" />
+
+		<intercept-url pattern="/instances*" method="GET" access="ROLE_OPS,ROLE_MIS" />
+		<intercept-url pattern="/instances/*" method="GET" access="ROLE_OPS,ROLE_MIS" />
+		<intercept-url pattern="/securitygroups*" method="GET" access="ROLE_OPS,ROLE_MIS" />
+		<intercept-url pattern="/securitygroups/*" method="GET" access="ROLE_OPS,ROLE_MIS" />
+
+		<intercept-url pattern="/alerts*" method="GET" access="ROLE_OPS,ROLE_MIS" />
+		<intercept-url pattern="/heartbeats*" method="GET" access="ROLE_OPS,ROLE_MIS" />
+
+		<intercept-url pattern="/users/**/kernels*" access="ROLE_OPS" />
+		<intercept-url pattern="/users/**/kernels/*" access="ROLE_OPS" />
+		<intercept-url pattern="/users/**/ramdisks*" access="ROLE_OPS" />
+		<intercept-url pattern="/users/**/ramdisks/*" access="ROLE_OPS" />	
+		
+		<intercept-url pattern="/users*" access="ROLE_OPS,ROLE_MIS,ROLE_PROVISIONING" />
+		<intercept-url pattern="/users/*" access="ROLE_OPS,ROLE_PROVISIONING" />
+		<intercept-url pattern="/users/accesskeys/*" access="ROLE_OPS,ROLE_PROVISIONING" />
+		
+		<intercept-url pattern="/currentuser*" access="ROLE_OPS,ROLE_MIS,ROLE_PROVISIONING" />
+        
+        <form-login login-page='/login.html' default-target-url="/index.html" always-use-default-target="false"/>
+        
+        <logout logout-url="/logout" logout-success-url="/login.html" /> 
+    </http>
+ 
+    <beans:bean id="pi-ops-user-service" class="com.bt.pi.ops.website.PiOpsUserDetailsService" />
+    
+    <authentication-manager>
+	    <authentication-provider user-service-ref="pi-ops-user-service">
+	        <password-encoder hash="md5"/>
+		</authentication-provider>
+	</authentication-manager>
+	
+	<beans:bean id="passwordEncoder" class="org.springframework.security.authentication.encoding.Md5PasswordEncoder" />
+	
+</beans:beans>

@@ -1,0 +1,28 @@
+<ivy-module version="2.0" xmlns:m="http://ant.apache.org/ivy/maven">
+    <info organisation="bt" module="pi-ops-website" />
+    <configurations>
+    	<include file="${p2p-build.base}/ivyconfigurations.xml" />
+    </configurations>
+    <publications>
+		<artifact name="pi-ops-website" type="jar" conf="main" />
+		<artifact name="pi-ops-website-www" type="tgz" conf="main" />
+	</publications>
+    <dependencies>
+    	<dependency name="p2p-api" rev="latest.integration" conf="main->main;test->test" />
+    	<dependency org="org.springframework.security" name="spring-security" rev="3.0.2.RELEASE" conf="main">
+			<artifact name="spring-security-core" />
+			<artifact name="spring-security-config" />
+			<artifact name="spring-security-web" />
+		</dependency>
+		<dependency org="org.eclipse.jetty" name="jetty" rev="7.0.2.v20100331" conf="main">
+			<artifact name="jetty-io" />
+			<artifact name="jetty-server" />
+			<artifact name="jetty-servlet" />
+			<artifact name="jetty-util" />
+			<artifact name="jetty-http" />
+			<artifact name="jetty-continuation" />
+			<artifact name="jetty-security" />
+		</dependency>
+		<dependency org="javax.servlet" name="servlet-api" rev="2.5" conf="main" />
+    </dependencies>
+</ivy-module>

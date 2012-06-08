@@ -1,0 +1,8 @@
+declare -x ANT_OPTS=-Xmx1024m
+rm -rf pastry
+svn co https://svn.mpi-sws.mpg.de/svn/freepastry/trunk/pastry pastry
+#cvs -d /net/madras/FreePastry/cvsroot/ co pastry
+cd pastry
+#ant beautifyandlicense
+ant/bin/ant freepastry-release -Dfreepastry-version=2.0
+cd ..

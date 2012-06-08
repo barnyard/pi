@@ -1,0 +1,82 @@
+#!/bin/bash
+
+export PATH=/bin:/usr/bin:/usr/sbin:/sbin:/usr/etc:/usr/ccs/bin:/usr/ucb:/usr/site/ssh/bin:/usr/local/bin:/usr/X11R6/bin:/home/jeffh/ant/apache-ant-1.6.0/bin
+
+AUTOBUILD_DIR=/DS/usr/jeffh/pastry/autobuild
+TODAY=`date +%Y%m%d`
+LOGDIR="$AUTOBUILD_DIR/logs/$TODAY"
+
+cd $AUTOBUILD_DIR
+
+echo "Checking out Pastry sources from SVN."
+rm -rf pastry
+svn co https://svn.mpi-sb.mpg.de/DS/freepastry/trunk/pastry pastry
+
+# Read the version number out of 'VERSION' in SVN 
+VERSION=`cat pastry/VERSION`
+
+# Append the date to the version string to uniquely identify this
+# nightly/weekly/snapshot build
+VERSION="${VERSION}_${TODAY}"
+
+# Create the directory for tonight's logs
+if [ ! -d $LOGDIR ]; then
+	mkdir $LOGDIR
+fi
+
+# Find a unique filename for the build output
+N="1"
+LOGFILE="$LOGDIR/build_$N.out"
+while [ -e $LOGFILE ]; do
+	((N=$N+1))
+	LOGFILE="$LOGDIR/build_$N.out"
+done
+
+echo "Starting build of version $VERSION at `date`"
+echo "Logging to $LOGFILE"
+
+# time to make the donuts
+
+# ant needs RAM!  ('export' by any other name ...)
+declare -x ANT_OPTS=-Xmx1024m
+
+cd pastry
+#ant javadoc
+
+./tools/verify-license.pl license/License.txt src/
+
+# the nightly doesn't javadoc, because it's a waste of time
+if [ "$1" == "--snapshot" ]; then
+    JAVADOC=""
+else
+	JAVADOC="-Ddontjavadoc=1"
+fi
+
+ant/bin/ant freepastry-release \
+	-Dfreepastry-version="$VERSION" \
+	$JAVADOC \
+	>$LOGFILE 2>&1
+
+# How did we do?
+build_result=$?
+
+if [ "$build_result" != "0" ]; then
+	# badness
+	echo "Build failed."
+	# send email to the team. someone will be fired.
+	$AUTOBUILD_DIR/report-failure $TODAY $LOGFILE
+else
+	# success
+	echo "Build succeeded."
+    if [ "$1" == "--snapshot" ]; then
+		scp -i ../build.dsa FreePastry-$VERSION* build@svn.mpi-sws.mpg.de:/var/www/freepastry.org/FreePastry/snapshots/
+	fi
+	
+	# run regression tests
+	chmod a+x ./tools/run-regression-tests.pl
+	./tools/run-regression-tests.pl FreePastry-$VERSION.jar
+fi
+
+
+
+

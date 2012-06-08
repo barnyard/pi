@@ -1,0 +1,377 @@
+<project name="PiRobustness" default="all">
+	<record name="${basedir}/build.log" loglevel="verbose" />
+
+	<property name="src" value="${basedir}/src/java" />
+	<property name="build" value="${basedir}/build" />
+	<property name="build.main" location="${build}/classes/main" />
+	<property name="class.name" value="com.bt.nia.koala.robustness.Main" />
+	<property name="class.name.pisss" value="com.bt.nia.koala.robustness.PisssMain" />
+	<property name="build.jar" location="${build}/jar" />
+	<property name="jar.name" value="eucalyptus-robustness.jar" />
+
+	<property name="lib" value="${basedir}/lib" />
+	<property name="resources" value="${basedir}/src/properties" />
+
+	<path id="project.classpath">
+		<pathelement location="${build.jar}/${jar.name}" />
+		<fileset dir="${lib}">
+			<include name="**/*.jar" />
+		</fileset>
+		<pathelement location="${resources}" />
+	</path>
+
+	<target name="all" depends="clean, compile, package" />
+
+	<target name="clean">
+		<delete dir="${build}" />
+	</target>
+
+	<target name="compile" depends="clean">
+		<mkdir dir="build" />
+		<mkdir dir="build/classes" />
+		<mkdir dir="build/classes/main" />
+		<javac includes="**/*.java" debug="true" destdir="${build.main}">
+			<src path="${src}" />
+			<classpath refid="project.classpath" />
+		</javac>
+	</target>
+
+	<target name="package" depends="compile">
+		<mkdir dir="${build.jar}" />
+		<jar destfile="${build.jar}/${jar.name}" basedir="${build.main}">
+			<manifest>
+				<attribute name="Main-Class" value="${class.name}" />
+			</manifest>
+		</jar>
+		<delete dir="${build.main}" />
+	</target>
+
+	<target name="run.local.copy" depends="package">
+		<antcall target="run.local">
+			<param name="class.name" value="com.bt.nia.koala.robustness.CopyOfMain" />
+		</antcall>
+	</target>
+
+	<target name="run.local" depends="package">
+
+		<property name="EUCA_KEY_DIR" value="etc/euca/localhost" />
+		<property environment="env" />
+		<property name="dnsname" value="localhost" />
+		<java classname="${class.name}" failonerror="true" fork="true">
+			<classpath refid="project.classpath" />
+			<env key="JAVA_HOME" value="/opt/jdk1.6.0_13" />
+			<env key="EC2_HOME" value="/home/adrian/work/cloud/ec2-api-tools-1.3-30349" />
+			<env key="EC2_AMITOOL_HOME" value="/home/adrian/work/cloud/ec2-ami-tools-1.3-26357" />
+
+			<env key="S3_URL" value="http://${dnsname}:8773/services/Walrus" />
+			<env key="EC2_URL" value="http://${dnsname}:8773/services/Eucalyptus" />
+
+			<env key="EC2_PRIVATE_KEY" value="${EUCA_KEY_DIR}/euca2-admin-65f6453f-pk.pem" />
+			<env key="EC2_CERT" value="${EUCA_KEY_DIR}/euca2-admin-65f6453f-cert.pem" />
+			<env key="EUCALYPTUS_CERT" value="${EUCA_KEY_DIR}/cloud-cert.pem" />
+
+			<env key="ADMIN_EC2_PRIVATE_KEY" value="${EUCA_KEY_DIR}/euca2-admin-65f6453f-pk.pem" />
+			<env key="ADMIN_EC2_CERT" value="${EUCA_KEY_DIR}/euca2-admin-65f6453f-cert.pem" />
+			<env key="ADMIN_EUCALYPTUS_CERT" value="${EUCA_KEY_DIR}/cloud-cert.pem" />
+
+			<env key="EC2_ACCESS_KEY" value="ISMvKXpXpadDiUoOSoAfww" />
+			<env key="EC2_SECRET_KEY" value="eMq_E4Hs1OV2cMXA_qBgpin9R1yMILyJp2eDUg" />
+
+			<env key="ADMIN_EC2_ACCESS_KEY" value="ISMvKXpXpadDiUoOSoAfww" />
+			<env key="ADMIN_EC2_SECRET_KEY" value="eMq_E4Hs1OV2cMXA_qBgpin9R1yMILyJp2eDUg" />
+
+			<env key="KOALA_AVAILABILITY_ZONE" value="localhost" />
+			<env key="EBS_SUPPORTED" value="true" />
+		</java>
+	</target>
+
+	<target name="run.fr001.baynard" depends="package">
+		<property environment="env" />
+		<property name="HTTP_PROXY_HOST" value="" />
+		<property name="HTTP_PROXY_PORT" value="" />
+		<property name="dnsname" value="api.fr001.baynard.cloud21cn.com" />
+		<property name="ops_url" value="ops.fr001.baynard.cloud21cn.com" />
+		<property name="image.destination.path" value="/tmp/pi-dev" />
+		<mkdir dir="${image.destination.path}" />
+		<java classname="${class.name}" failonerror="true" fork="true">
+			<classpath refid="project.classpath" />
+
+			<env key="JAVA_HOME" value="${env.JAVA_HOME}" />
+			<env key="EC2_HOME" value="/root/ec2-api-tools-1.3-30349" />
+			<env key="EC2_AMITOOL_HOME" value="/root/ec2-ami-tools-1.3-26357" />
+
+			<env key="OPS_URL" value="https://${ops_url}:8443" />
+			<env key="COMMAND_SUFFIX" value="--request-timeout 120" />
+			<env key="ROBUSTNESS_SLEEP" value="30000" />
+
+			<env key="KOALA_AVAILABILITY_ZONE" value="cube1-1a" />
+			<env key="RUN_SNAPSHOT" value="yes" />
+		</java>
+	</target>
+
+	<target name="run.fr002.baynard" depends="package">
+		<property environment="env" />
+		<property name="HTTP_PROXY_HOST" value="" />
+		<property name="HTTP_PROXY_PORT" value="" />
+		<property name="dnsname" value="api.fr002.baynard.cloud21cn.com" />
+		<property name="ops_url" value="ops.fr002.baynard.cloud21cn.com" />
+		<property name="image.destination.path" value="/tmp/pi-dev" />
+		<mkdir dir="${image.destination.path}" />
+		<java classname="${class.name}" failonerror="true" fork="true">
+			<classpath refid="project.classpath" />
+
+			<env key="JAVA_HOME" value="${env.JAVA_HOME}" />
+			<env key="EC2_HOME" value="/root/ec2-api-tools-1.3-30349" />
+			<env key="EC2_AMITOOL_HOME" value="/root/ec2-ami-tools-1.3-26357" />
+			<env key="OPS_URL" value="https://${ops_url}:8443" />
+			<env key="COMMAND_SUFFIX" value="--request-timeout 120" />
+			<env key="ROBUSTNESS_SLEEP" value="30000" />
+
+			<env key="KOALA_AVAILABILITY_ZONE" value="cube1-1a" />
+			<env key="RUN_SNAPSHOT" value="yes" />
+		</java>
+	</target>
+
+	<target name="run.fr003.baynard" depends="package">
+		<property environment="env" />
+		<property name="HTTP_PROXY_HOST" value="" />
+		<property name="HTTP_PROXY_PORT" value="" />
+		<property name="dnsname" value="api.fr003.baynard.cloud21cn.com" />
+		<property name="ops_url" value="ops.fr003.baynard.cloud21cn.com" />
+		<property name="image.destination.path" value="/tmp/pi-dev" />
+		<mkdir dir="${image.destination.path}" />
+		<java classname="${class.name}" failonerror="true" fork="true">
+			<classpath refid="project.classpath" />
+
+			<env key="JAVA_HOME" value="${env.JAVA_HOME}" />
+			<env key="EC2_HOME" value="/root/ec2-api-tools-1.3-30349" />
+			<env key="EC2_AMITOOL_HOME" value="/root/ec2-ami-tools-1.3-26357" />
+			<env key="OPS_URL" value="https://${ops_url}:8443" />
+			<env key="COMMAND_SUFFIX" value="--request-timeout 120" />
+			<env key="ROBUSTNESS_SLEEP" value="30000" />
+
+			<env key="KOALA_AVAILABILITY_ZONE" value="cube1-1a" />
+			<env key="RUN_SNAPSHOT" value="yes" />
+		</java>
+	</target>
+
+	<target name="run.fr004.baynard" depends="package">
+		<property environment="env" />
+		<property name="HTTP_PROXY_HOST" value="" />
+		<property name="HTTP_PROXY_PORT" value="" />
+		<property name="dnsname" value="api.fr004.baynard.cloud21cn.com" />
+		<property name="ops_url" value="ops.fr004.baynard.cloud21cn.com" />
+		<property name="image.destination.path" value="/tmp/pi-dev" />
+		<mkdir dir="${image.destination.path}" />
+		<java classname="${class.name}" failonerror="true" fork="true">
+			<classpath refid="project.classpath" />
+
+			<env key="JAVA_HOME" value="${env.JAVA_HOME}" />
+			<env key="EC2_HOME" value="/root/ec2-api-tools-1.3-30349" />
+			<env key="EC2_AMITOOL_HOME" value="/root/ec2-ami-tools-1.3-26357" />
+			<env key="OPS_URL" value="https://${ops_url}:8443" />
+			<env key="COMMAND_SUFFIX" value="--request-timeout 120" />
+			<env key="ROBUSTNESS_SLEEP" value="30000" />
+
+			<env key="KOALA_AVAILABILITY_ZONE" value="cube1-1a" />
+			<env key="RUN_SNAPSHOT" value="yes" />
+		</java>
+	</target>
+
+	<target name="run.fr005.baynard" depends="package">
+		<property environment="env" />
+		<property name="HTTP_PROXY_HOST" value="" />
+		<property name="HTTP_PROXY_PORT" value="" />
+		<property name="dnsname" value="api.fr005.baynard.cloud21cn.com" />
+		<property name="ops_url" value="ops.fr005.baynard.cloud21cn.com" />
+		<property name="image.destination.path" value="/tmp/pi-dev" />
+		<mkdir dir="${image.destination.path}" />
+		<java classname="${class.name}" failonerror="true" fork="true">
+			<classpath refid="project.classpath" />
+
+			<env key="JAVA_HOME" value="${env.JAVA_HOME}" />
+			<env key="EC2_HOME" value="/root/ec2-api-tools-1.3-30349" />
+			<env key="EC2_AMITOOL_HOME" value="/root/ec2-ami-tools-1.3-26357" />
+			<env key="OPS_URL" value="https://${ops_url}:8443" />
+			<env key="COMMAND_SUFFIX" value="--request-timeout 120" />
+			<env key="ROBUSTNESS_SLEEP" value="30000" />
+
+			<env key="KOALA_AVAILABILITY_ZONE" value="cube1-1a" />
+			<env key="RUN_SNAPSHOT" value="yes" />
+		</java>
+	</target>
+
+	<target name="run.fr001.lax1" depends="package">
+		<property environment="env" />
+		<property name="HTTP_PROXY_HOST" value="" />
+		<property name="HTTP_PROXY_PORT" value="" />
+		<property name="dnsname" value="api.fr001.lax1.cloud21cn.com" />
+		<property name="ops_url" value="ops.fr001.lax1.cloud21cn.com" />
+		<property name="image.destination.path" value="/tmp/pi-dev" />
+		<mkdir dir="${image.destination.path}" />
+		<java classname="${class.name}" failonerror="true" fork="true">
+			<classpath refid="project.classpath" />
+
+			<env key="JAVA_HOME" value="${env.JAVA_HOME}" />
+			<env key="EC2_HOME" value="/root/ec2-api-tools-1.3-30349" />
+			<env key="EC2_AMITOOL_HOME" value="/root/ec2-ami-tools-1.3-26357" />
+			<env key="OPS_URL" value="https://${ops_url}:8443" />
+			<env key="COMMAND_SUFFIX" value="--request-timeout 120" />
+			<env key="ROBUSTNESS_SLEEP" value="30000" />
+
+			<env key="KOALA_AVAILABILITY_ZONE" value="lax1-a" />
+			<env key="RUN_SNAPSHOT" value="yes" />
+		</java>
+	</target>
+
+	<target name="run.fr002.lax1" depends="package">
+		<property environment="env" />
+		<property name="HTTP_PROXY_HOST" value="" />
+		<property name="HTTP_PROXY_PORT" value="" />
+		<property name="dnsname" value="api.fr002.lax1.cloud21cn.com" />
+		<property name="ops_url" value="ops.fr002.lax1.cloud21cn.com" />
+		<property name="image.destination.path" value="/tmp/pi-dev" />
+		<mkdir dir="${image.destination.path}" />
+		<java classname="${class.name}" failonerror="true" fork="true">
+			<classpath refid="project.classpath" />
+
+			<env key="JAVA_HOME" value="${env.JAVA_HOME}" />
+			<env key="EC2_HOME" value="/root/ec2-api-tools-1.3-30349" />
+			<env key="EC2_AMITOOL_HOME" value="/root/ec2-ami-tools-1.3-26357" />
+			<env key="OPS_URL" value="https://${ops_url}:8443" />
+			<env key="COMMAND_SUFFIX" value="--request-timeout 120" />
+			<env key="ROBUSTNESS_SLEEP" value="30000" />
+
+			<env key="KOALA_AVAILABILITY_ZONE" value="lax1-a" />
+			<env key="RUN_SNAPSHOT" value="yes" />
+		</java>
+	</target>
+
+	<target name="run.fr003.lax1" depends="package">
+		<property environment="env" />
+		<property name="HTTP_PROXY_HOST" value="" />
+		<property name="HTTP_PROXY_PORT" value="" />
+		<property name="dnsname" value="api.fr003.lax1.cloud21cn.com" />
+		<property name="ops_url" value="ops.fr003.lax1.cloud21cn.com" />
+		<property name="image.destination.path" value="/tmp/pi-dev" />
+		<mkdir dir="${image.destination.path}" />
+		<java classname="${class.name}" failonerror="true" fork="true">
+			<classpath refid="project.classpath" />
+
+			<env key="JAVA_HOME" value="${env.JAVA_HOME}" />
+			<env key="EC2_HOME" value="/root/ec2-api-tools-1.3-30349" />
+			<env key="EC2_AMITOOL_HOME" value="/root/ec2-ami-tools-1.3-26357" />
+			<env key="OPS_URL" value="https://${ops_url}:8443" />
+			<env key="COMMAND_SUFFIX" value="--request-timeout 120" />
+			<env key="ROBUSTNESS_SLEEP" value="30000" />
+
+			<env key="KOALA_AVAILABILITY_ZONE" value="lax1-a" />
+			<env key="RUN_SNAPSHOT" value="yes" />
+		</java>
+	</target>
+	
+	<target name="run.fr001.lhr1" depends="package">
+			<property environment="env" />
+			<property name="HTTP_PROXY_HOST" value="" />
+			<property name="HTTP_PROXY_PORT" value="" />
+			<property name="dnsname" value="api.fr001.lhr1.cloud21cn.com" />
+			<property name="ops_url" value="ops.fr001.lhr1.cloud21cn.com" />
+			<property name="image.destination.path" value="/tmp/pi-dev" />
+			<mkdir dir="${image.destination.path}" />
+			<java classname="${class.name}" failonerror="true" fork="true">
+				<classpath refid="project.classpath" />
+
+				<env key="JAVA_HOME" value="${env.JAVA_HOME}" />
+				<env key="EC2_HOME" value="/root/ec2-api-tools-1.3-30349" />
+				<env key="EC2_AMITOOL_HOME" value="/root/ec2-ami-tools-1.3-26357" />
+				<env key="OPS_URL" value="https://${ops_url}:8443" />
+				<env key="COMMAND_SUFFIX" value="--request-timeout 120" />
+				<env key="ROBUSTNESS_SLEEP" value="30000" />
+
+				<env key="KOALA_AVAILABILITY_ZONE" value="lhr1-a" />
+				<env key="RUN_SNAPSHOT" value="yes" />
+			</java>
+		</target>
+
+	<target name="run.pisss.fr002.baynard" depends="package">
+		<property environment="env" />
+		<property name="HTTP_PROXY_HOST" value="" />
+		<property name="HTTP_PROXY_PORT" value="" />
+		<property name="dnsname" value="api.fr002.baynard.cloud21cn.com" />
+		<property name="ops_url" value="ops.fr002.baynard.cloud21cn.com" />
+		<property name="image.destination.path" value="/tmp/pi-dev" />
+		<mkdir dir="${image.destination.path}" />
+		<java classname="${class.name.pisss}" failonerror="true" fork="true">
+			<classpath refid="project.classpath" />
+			<jvmarg value="-Xms256m" />
+			<jvmarg value="-Xmx512m" />
+			<env key="JAVA_HOME" value="${env.JAVA_HOME}" />
+			<env key="OPS_URL" value="https://${ops_url}:8443" />
+			<env key="COMMAND_SUFFIX" value="--request-timeout 120" />
+			<env key="ROBUSTNESS_SLEEP" value="30000" />
+
+			<env key="KOALA_AVAILABILITY_ZONE" value="cube1-1a" />
+		</java>
+	</target>
+
+	<target name="run.pisss.fr003.baynard" depends="package">
+		<property environment="env" />
+		<property name="ops_url" value="ops.fr003.baynard.cloud21cn.com" />
+		<property name="image.destination.path" value="/tmp/pi-dev" />
+		<mkdir dir="${image.destination.path}" />
+		<java classname="${class.name.pisss}" failonerror="true" fork="true">
+			<classpath refid="project.classpath" />
+			<jvmarg value="-Xms256m" />
+			<jvmarg value="-Xmx512m" />
+			<env key="JAVA_HOME" value="${env.JAVA_HOME}" />
+			<env key="OPS_URL" value="https://${ops_url}:8443" />
+			<env key="COMMAND_SUFFIX" value="--request-timeout 120" />
+			<env key="ROBUSTNESS_SLEEP" value="30000" />
+		</java>
+	</target>
+
+	<target name="run.pisss.fr001.baynard" depends="package">
+		<property environment="env" />
+		<property name="number_gets" value="50" />
+		<property name="number_puts" value="50" />
+		<property name="ops_url" value="ops.fr001.baynard.cloud21cn.com" />
+		<property name="image.destination.path" value="/tmp/pi-dev" />
+		<mkdir dir="${image.destination.path}" />
+		<java classname="${class.name.pisss}" failonerror="true" fork="true">
+			<classpath refid="project.classpath" />
+			<jvmarg value="-Xms256m" />
+			<jvmarg value="-Xmx512m" />
+			<env key="JAVA_HOME" value="${env.JAVA_HOME}" />
+			<env key="OPS_URL" value="https://${ops_url}:8443" />
+			<env key="COMMAND_SUFFIX" value="--request-timeout 120" />
+			<env key="ROBUSTNESS_SLEEP" value="30000" />
+			<sysproperty key="number_gets" value="${number_gets}" />
+			<sysproperty key="number_puts" value="${number_puts}" />
+			<sysproperty key="numberOfRuns" value="${numberOfRuns}" />
+			<sysproperty key="numberOfConcurrentStarts" value="${numberOfConcurrentStarts}" />
+		</java>
+	</target>
+
+	<target name="run.pisss.fr001.lax1" depends="package">
+		<property environment="env" />
+		<property name="number_gets" value="50" />
+		<property name="number_puts" value="50" />
+		<property name="ops_url" value="ops.fr001.lax1.cloud21cn.com" />
+		<property name="image.destination.path" value="/tmp/pi-dev" />
+		<mkdir dir="${image.destination.path}" />
+		<java classname="${class.name.pisss}" failonerror="true" fork="true">
+			<classpath refid="project.classpath" />
+			<jvmarg value="-Xms256m" />
+			<jvmarg value="-Xmx512m" />
+			<env key="JAVA_HOME" value="${env.JAVA_HOME}" />
+			<env key="OPS_URL" value="https://${ops_url}:8443" />
+			<env key="COMMAND_SUFFIX" value="--request-timeout 120" />
+			<env key="ROBUSTNESS_SLEEP" value="30000" />
+			<sysproperty key="number_gets" value="${number_gets}" />
+			<sysproperty key="number_puts" value="${number_puts}" />
+			<sysproperty key="numberOfRuns" value="${numberOfRuns}" />
+			<sysproperty key="numberOfConcurrentStarts" value="${numberOfConcurrentStarts}" />
+		</java>
+	</target>
+
+</project>

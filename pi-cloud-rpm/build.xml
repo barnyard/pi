@@ -1,0 +1,267 @@
+<project name="pi-cloud-rpm" default="default">
+
+	<!-- user-specific properties + default values -->
+	<property file="properties/${user.name}.properties" />	
+	<property file="properties/build.properties" />
+
+	<import file="${p2p-build.base}/build.xml" />
+
+	<property name="build.install.prefix" value="build/install" />
+	<property name="build.install.dir" value="${build.install.prefix}/${install.dir}/current" />
+    <property name="build.filters.dir" value="build/filters"/>
+	<property name="build.filtered.templates.dir" value="build/filtered-templates"/>
+	<property name="rpm.dir" value="build/rpm" />
+			
+	<target name="copy-files">
+		<copy todir="${build.install.dir}/lib">
+			<fileset dir="lib/main" excludes="*.tgz *.tar.gz *sources*" />
+		</copy>
+
+		<copy todir="${build.install.dir}/etc">
+			<fileset dir="lib/tools" />
+		</copy>
+
+		<copy todir="${build.install.dir}">
+			<fileset dir="src/main/resources" />
+		</copy>
+		
+		<untar dest="${build.install.dir}/www" compression="gzip">
+			<fileset dir="lib/main" includes="*-www*.tgz"/>
+		</untar>
+	</target>
+
+	<target name="generate.filters">
+		<mkdir dir="${build.filters.dir}" />
+		<delete dir="${build.filters.dir}" includes="*.*"/>
+		
+		<loadfile srcFile="properties/defaults.environment.json" property="envs.json"/>
+		
+		<script language="javascript">
+			importPackage(java.lang);
+			importPackage(java.io);
+
+			// shorter 'print' function
+			out = function(str) {
+				System.out.println(str);
+			}
+			
+			out("start");
+			filtersFilesDir = project.getProperty('build.filters.dir');		
+			envsFolder = project.getProperty('build.envs.dir');
+			out("props loaded");
+			if(envsFolder == null)
+			{
+				envsFolder = "properties/environments";
+			}
+			out("Environments folder: "+ envsFolder);
+						
+			// loop helper that iterates over everything that is not an array in a JSON object
+			foreachval = function(arr, callback) {
+				for (var attr in arr) {
+					if (!(arr[attr] instanceof Array)) {						
+						callback(attr, arr[attr]);
+					}
+				}
+			}
+			
+			// clone a js object
+			function cloneObject(obj) {
+				var clone = {};
+			    for(var i in obj) {
+					if(typeof(obj[i])=="object")
+			        	clone[i] = cloneObject(obj[i]);
+			        else
+			            clone[i] = obj[i];
+			    }
+			    return clone;
+			}
+
+			// write a json object to given file in property format
+			writePropsToFile = function(filename, props) {
+				var f = new PrintWriter(filename);
+				for (var key in props)
+					f.println(key + '=' + props[key]);
+				f.close();
+			}
+			
+			readFileAsString = function(anEnvFile) {
+			   	var buffer = "";
+			   	var f = new BufferedReader(new FileReader(anEnvFile));
+			  	var temp = f.readLine();
+				while(temp!=null){
+					buffer = buffer +temp;
+				 	temp = f.readLine();
+			   	}
+			   	return buffer;
+			}
+			
+			
+			var json = project.getProperty("envs.json");
+			var envData = eval("(" + json + ")");
+			var releaseNumber = eval('"' + project.getProperty("release.number") + '"');	// implicit conversion from java.lang.String to json string
+			project.setProperty("piCloudVersion", envData.defaults.piCloudVersion);
+			
+			// write defaults file
+			var defaultSettings = envData.defaults;
+			defaultSettings['releaseNumber'] = releaseNumber;
+			var defaultsFile = filtersFilesDir + '/defaults.filter.props';
+			writePropsToFile(defaultsFile, defaultSettings);
+			out("Wrote defaults file " + defaultsFile);
+			
+			var envDir = new File(envsFolder);
+			var envFiles = envDir.listFiles();
+			for(var envFile in envFiles){
+				out("Processing file: "+ envFiles[envFile].toString());	
+			    if( envFiles[envFile].getName().contains(".environment.json")){
+				var currEnv =  eval("(" + readFileAsString(envFiles[envFile]) + ")");
+				out(currEnv);
+				var currEnvFiltersFile = filtersFilesDir + '/' + currEnv.feHostname + '.global.filter.props';
+				out("Processing environment " + currEnv.feHostname + ', filtering to ' + currEnvFiltersFile);
+			
+				// start with default settings
+				var envProps = cloneObject(defaultSettings);			
+
+				// bring in top-levle settings for this env
+				foreachval(currEnv, function(attr, val) {
+					out("    setting property " + attr + " : " + val);
+					envProps[attr] = val;
+				});
+				writePropsToFile(currEnvFiltersFile, envProps);
+			
+				// process regions
+				foreachval(currEnv.regions, function(attr, region) {
+					out("    Found region " + region.regionName);
+					var currRegFiltersFile = filtersFilesDir + '/' + currEnv.feHostname + '.region.' + region.regionName + '.filter.props';
+					var regionProps = cloneObject(envProps);
+					foreachval(region, function(regionAttr, regionVal) {
+						out("        setting property " + regionAttr + " : " + regionVal);
+						regionProps[regionAttr] = regionVal;
+					});
+					writePropsToFile(currRegFiltersFile, regionProps);			
+				
+					// process availability zones for current region
+					foreachval(region.availabilityZones, function(attr, avz) {
+						out("        Found availability zone " + avz.avzName);
+						var currAvzFiltersFile = filtersFilesDir + '/' + currEnv.feHostname + '.avz.' + avz.avzName + '.filter.props';
+						var avzProps = cloneObject(regionProps);
+				
+						foreachval(avz, function(avzAttr, avzVal) {
+							out("            setting property " + avzAttr + " : " + avzVal);
+							avzProps[avzAttr] = avzVal;
+						});
+						writePropsToFile(currAvzFiltersFile, avzProps);
+					});			
+				});
+			}
+			}
+		</script>
+	</target>
+	
+	<target name="filter-all-templates" depends="generate.filters">
+		<!-- generate a file for each template, against filter file for each environment -->
+		<foreach target="filter-environment-templates" param="environment.filters.file">
+			<path>
+				<fileset dir="${build.filters.dir}" includes="*.global.filter.props"/>
+			</path>
+		</foreach>
+	</target>
+		
+	<target name="filter-environment-templates">
+		<propertyregex property="environment.name" input="${environment.filters.file}" regexp="(.*/)+(.*).global.filter.props" replace="\2" />
+		<echo message="Filtering templates for environment ${environment.name}..."/>
+		
+		<foreach target="filter-template-for-all-scopes" param="template.path" inheritall="true">
+			<path>				
+				<fileset dir="src/main/templates"/>
+			</path>
+		</foreach>
+		
+		<foreach target="concat-filtered-templates" param="main.template" inheritall="true">
+			<path>				
+				<fileset dir="src/main/templates" excludes="**/*.region, **/*.avz"/>
+			</path>
+		</foreach>
+		
+	</target>
+	
+	<target name="filter-template-for-all-scopes">
+		<basename property="template.basename" file="${template.path}" />
+		<dirname property="template.dirname" file="${template.path}" />
+		<propertyregex property="output.dirname" input="${template.dirname}" regexp=".*/(.*)" replace="\1" />
+		<propertyregex property="template.scope" input="${template.basename}" regexp=".*\.(global|region|avz)" replace="\1"/>
+		<property name="template.scope" value="global" />
+
+		<foreach target="filter-template-for-scope" param="filters.file" inheritall="true">
+			<path>				
+				<fileset dir="${build.filters.dir}" includes="${environment.name}.${template.scope}.*" />
+			</path>
+		</foreach>
+	</target>
+
+	<target name="filter-template-for-scope">
+		<propertyregex property="scope.name" input="${filters.file}" regexp=".*(region|avz)\.(.*).filter.props" replace=".\2" />
+		<property name="scope.name" value=""/>
+		<propertyregex property="output.filename" input="${template.basename}" regexp="([^\.]+\.[^\.]+).*" replace="\1.${environment.name}.${template.scope}${scope.name}" />
+		
+		<echo message="processing template ${template.path} to file ${output.filename}, filters file ${filters.file}"/>
+		<copy file="${template.path}" tofile="${build.filtered.templates.dir}/${output.dirname}/${output.filename}" overwrite="true" verbose="false">
+			<filterset filtersfile="${filters.file}"/>
+		</copy>
+	</target>
+	
+	<target name="concat-filtered-templates">	
+		<basename property="main.template.basename" file="${main.template}"/>
+		<dirname property="main.template.dirname" file="${main.template}"/>
+		<propertyregex property="output.dirname" input="${main.template.dirname}" regexp=".*/(.*)" replace="\1" />
+		<propertyregex property="output.filename" input="${main.template.basename}" regexp="([^\.]+)\.([^\.]+).*" replace="\1.${environment.name}.\2" />
+		
+		<concat destfile="${build.install.dir}/${output.dirname}/${output.filename}" fixlastline="true">
+			<fileset dir="${build.filtered.templates.dir}" includes="**/${main.template.basename}.${environment.name}.global"/>
+			<fileset dir="${build.filtered.templates.dir}" includes="**/${main.template.basename}.${environment.name}.region.*"/>
+			<fileset dir="${build.filtered.templates.dir}" includes="**/${main.template.basename}.${environment.name}.avz.*"/>
+		</concat>
+	</target>
+
+	<target name="filter-spec" depends="generate.filters">
+		<copy file="src/main/specs/pi-cloud.spec" todir="${rpm.dir}/SPECS">
+			<filterset filtersfile="${build.filters.dir}/defaults.filter.props"/>
+		</copy>
+	</target>
+	
+	<target name="build-rpm" depends="resolve-dependencies, generate-svn-revision, copy-files, filter-all-templates, filter-spec, create-changelog">
+		<mkdir dir="${rpm.dir}/BUILD" />
+		<mkdir dir="${rpm.dir}/SOURCES" />
+		<mkdir dir="${rpm.dir}/SRPMS" />
+		<mkdir dir="${rpm.dir}/RPMS/noarch" />
+		<copy file="${rpm.dir}/SPECS/pi-cloud.spec" tofile="${build.install.dir}/pi-cloud.spec" />
+		<!-- not using topDir="build/rpm" due to bug in Ant 1.7.0: https://issues.apache.org/bugzilla/show_bug.cgi?id=45316 -->
+        <exec executable="rpmbuild" failonerror="true">
+        	<arg value="--define" />
+        	<arg value="_topdir ${basedir}/${rpm.dir}" />
+            <arg value="--buildroot" />
+            <arg value="${basedir}/${build.install.prefix}" />
+            <arg value="-bb" />
+            <arg value="--target" />
+            <arg value="noarch" />
+            <arg value="${rpm.dir}/SPECS/pi-cloud.spec" />
+        </exec>
+	</target>
+
+	<target name="generate-svn-revision">
+		<exec dir="${basedir}" executable="sh" outputproperty="release.number" inputstring="svn info . -r HEAD | grep Revision | awk '{print $2}'" />
+	</target>
+
+	<target name="publish" depends="build-rpm" unless="publish.skip">
+
+        <copy file="${rpm.dir}/RPMS/noarch/pi-cloud-${piCloudVersion}-${release.number}.noarch.rpm" tofile="dist/rpms/pi-cloud.rpm" />
+		<property name="artifact.exists" value="true" />
+		<antcall target="-publish" />
+	</target>
+
+	<target name="create-changelog">
+		<exec dir="${basedir}" executable="sh" output="${basedir}/${build.install.dir}/changelog.txt">
+			<arg  value='get-story-details'  />
+		</exec>
+	</target>
+
+</project>

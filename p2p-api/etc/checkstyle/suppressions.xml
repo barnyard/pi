@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE suppressions PUBLIC
+    "-//Puppy Crawl//DTD Suppressions 1.0//EN"
+    "http://www.puppycrawl.com/dtds/suppressions_1_0.dtd">
+<suppressions>
+	<suppress checks="IllegalTypeCheck" files="WSSecurityHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="KeyStoreCreatingCryptoFacadeFactoryBean.java" />
+	<suppress checks="IllegalCatchCheck" files="RestQueryFilter.java" />
+	<suppress checks="IllegalCatchCheck" files="ApiApplicationManager.java" />
+	<suppress checks="IllegalCatchCheck" files="UserManagementService.java" />
+	<suppress checks="IllegalCatchCheck" files="DeleteUserHelper.java" />
+	<suppress checks="IllegalCatchCheck" files="AllocateAddressHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="AssociateAddressHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="AttachVolumeHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="AuthorizeSecurityGroupIngressHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="CreateKeyPairHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="CreateSecurityGroupHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="CreateSnapshotHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="CreateVolumeHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="DeleteKeyPairHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="DeleteSecurityGroupHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="DeleteSnapshotHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="DeleteVolumeHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="DeregisterImageHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="DescribeAddressesHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="DescribeAvailabilityZonesHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="DescribeImagesHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="DescribeInstancesHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="DescribeKeyPairsHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="DescribeRegionsHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="DescribeSecurityGroupsHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="DescribeSnapshotsHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="DescribeVolumesHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="DetachVolumeHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="DisassociateAddressHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="GetConsoleOutputHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="HandlerBase.java" />
+	<suppress checks="IllegalCatchCheck" files="RebootInstancesHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="RegisterImageHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="ReleaseAddressHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="RevokeSecurityGroupIngressHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="RunInstancesHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="TerminateInstancesHandler.java" />
+	<suppress checks="IllegalCatchCheck" files="SimpleHttpsServerFactoryBean.java" />
+	<suppress checks="ClassFanOutComplexity" files="ImageServiceImpl.java" />
+</suppressions>

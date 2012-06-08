@@ -1,0 +1,15 @@
+<ivy-module version="2.0">
+    <info organisation="bt" module="p2p-imagemanager"/>
+    <configurations>
+    	<include file="${p2p-build.base}/ivyconfigurations.xml" />
+    </configurations>
+    <dependencies>
+        <dependency name="p2p-instancemanager" rev="latest.integration" conf="main->main;test->test" />
+        <dependency name="pi-sss" rev="latest.integration" conf="main->main;test->test" />
+		<dependency org="xalan" name="xalan" rev="2.7.0" conf="main" />
+		<dependency org="org.springframework" name="spring" rev="3.0.0.RELEASE" conf="test">
+			<artifact name="spring-test" />
+			
+		</dependency>
+   </dependencies>
+</ivy-module>

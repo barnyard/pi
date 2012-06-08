@@ -1,0 +1,60 @@
+<project name="pi-tools" default="default" xmlns:ivy="antlib:org.apache.ivy.ant">
+
+	<!-- user-specific properties + default values -->
+	<property file="properties/${user.name}.properties" />
+	<property file="properties/build.properties" />
+
+	<import file="${p2p-build.base}/build.xml" />
+
+	<target name="dist" depends="resolve-dependencies">
+		<mkdir dir="build/bin" />
+		<mkdir dir="build/lib" />
+		<mkdir dir="build/groovy" />
+		<mkdir dir="dist/tar.gzs" />
+
+		<foreach param="file.path" target="create.tools.script">
+			<path>
+				<fileset dir="src/main/groovy/ops" includes="*.groovy" />
+			</path>
+		</foreach>
+
+		<copy todir="build/lib">
+	        <fileset refid="lib.main" />
+		</copy>
+		
+		<copy todir="build/bin">
+	        <fileset dir="src/main/scripts" includes="*.sh" />
+		</copy>
+
+		<copy flatten="true" todir="build/groovy">
+			<fileset dir="src/main/groovy" includes="**/*.groovy" />
+		</copy>
+		
+		<chmod perm="755">
+			<fileset dir="build/bin" includes="**/*" />
+		</chmod>
+
+		<tar compression="gzip" destfile="dist/tar.gzs/${ant.project.name}.tar.gz">
+			<tarfileset dir="build" includes="bin/*" filemode="755"/>
+			<tarfileset dir="build" includes="**/*">
+				<exclude name="bin/*" />
+			</tarfileset>
+		</tar>
+	</target>
+
+	<target name="create.tools.script">
+		<basename property="orig.filename" file="${file.path}" suffix=".groovy" />
+		<propertyregex property="script.filename" input="${orig.filename}" regexp="_" replace="-" />
+		<copy file="src/main/templates/pi-groovy-script-wrapper.sh.template" tofile="build/bin/${script.filename}">
+			<filterset>
+				<filter token="GROOVY_SCRIPT_FILE" value="${orig.filename}" />
+			</filterset>
+		</copy>				
+	</target>
+
+
+    <target name="publish" depends="dist" unless="publish.skip">
+        <ivy:publish resolver="publish" artifactspattern="${ivy.distrib.dir}/[type]s/[artifact].[ext]" />
+    </target>
+
+</project>

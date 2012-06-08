@@ -1,0 +1,10 @@
+<ivy-module version="2.0">
+	<info organisation="bt" module="p2p-integration" />
+	<configurations>
+		<include file="${p2p-build.base}/ivyconfigurations.xml" />
+	</configurations>
+	<dependencies>
+		<dependency name="pi-ops-website" rev="latest.integration" conf="test->main,test" />
+		<dependency org="com.google.code.typica" name="typica" rev="1.6" conf="test" />
+	</dependencies>
+</ivy-module>

@@ -1,0 +1,242 @@
+<project name="p2p-build" xmlns:ivy="antlib:org.apache.ivy.ant">
+
+	<taskdef resource="net/sf/antcontrib/antcontrib.properties" />
+
+	<property environment="env" />
+
+	<property name="unittest.base" value="${pe-build.base}/unittest" />
+	<property name="reporting.base" value="${pe-build.base}/reporting" />
+
+	<!-- import pe-build -->
+	<import file="${unittest.base}/build.xml" />
+	<import file="${reporting.base}/build.xml" />
+
+	<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpath="${p2p-build.base}/repo/org.apache.ivy/ivy/2.1.0/jars/ivy.jar" />
+
+	<!-- locations of (optional) checkstyle and findbugs override files -->
+	<property name="checkstyle.config.file.location" location="etc/checkstyle/checks.xml" />
+	<property name="checkstyle.suppressions.file.location" location="etc/checkstyle/suppressions.xml" />
+	<property name="findbugs.excludes.file.location" location="etc/findbugs/exclusions.xml" />
+
+	<!-- don't use pe-build versions of config files if project ones exist -->
+	<available file="${checkstyle.config.file.location}" property="build.report.checkstyle.config.file" value="${checkstyle.config.file.location}" />
+	<available file="${checkstyle.suppressions.file.location}" property="suppressions.file" value="${checkstyle.suppressions.file.location}" />
+	<available file="${findbugs.excludes.file.location}" property="findbugs.excludes.file" value="${findbugs.excludes.file.location}" />
+
+
+	<fileset id="lib.main" dir="lib/main" includes="**/*.jar" excludes="**/*-sources.jar" />
+
+	<path id="main.classpath">
+		<pathelement location="build/classes/main" />
+		<fileset refid="lib.main" />
+	</path>
+
+	<path id="test.classpath">
+		<pathelement location="build/classes/test" />
+		<fileset dir="lib/test" includes="**/*.jar" excludes="**/*-sources.jar" />
+		<path refid="main.classpath" />
+	</path>
+
+	<path id="integration.classpath">
+		<pathelement location="build/classes/integration" />
+		<path refid="test.classpath" />
+	</path>
+
+	<target name="default" depends="clean, jar" />
+
+	<target name="document">
+		<available file="src/main/java" property="src.main.java.exists" value="true" />
+		<antcall target="-document.run" />
+	</target>
+
+	<target name="-document.run" if="src.main.java.exists">
+		<mkdir dir="build/docs"/>
+		<javadoc sourcepath="src/main/java" destdir="build/docs">
+			<classpath refid="main.classpath" />
+			<package name="com.bt.*" />
+		</javadoc>
+		<zip destfile="build/${ant.project.name}-docs.zip" basedir="build/docs" />
+	</target>
+
+	<target name="ci" depends="clean, publish" />
+
+	<target name="delete-old-ivy-cache-files">
+		<property name="datetime.pattern" value="dd/MM/yyyy HH:mm" />
+		<tstamp>
+			<format property="oldest.timestamp" pattern="${datetime.pattern}" offset="-2" unit="week" />
+		</tstamp>
+		<mkdir dir="${user.home}/.ivy2/shared/bt" />
+		<!-- until Ant 1.7.1, then we can use erroronmissingdir of fileset -->
+		<fileset id="ivy.shared.old" dir="${user.home}/.ivy2/shared/bt">
+			<date datetime="${oldest.timestamp}" when="before" pattern="${datetime.pattern}" />
+		</fileset>
+		<echo message="Deleting files in Ivy cache directory older than ${oldest.timestamp}" />
+		<delete verbose="true" includeemptydirs="true">
+			<fileset refid="ivy.shared.old" />
+		</delete>
+	</target>
+
+	<target name="clean" depends="delete-old-ivy-cache-files">
+		<delete dir="build" />
+		<delete dir="dist" />
+		<delete dir="lib" />
+		<delete dir="log" />
+		<delete dir="reports" />
+		<delete dir="docs" />
+	</target>
+
+	<target name="resolve-dependencies">
+		<property name="ivy.settings.file" value="${p2p-build.base}/ivysettings.xml" />
+		<property name="ivy.retrieve.pattern" value="${ivy.lib.dir}/[conf]/[artifact]-[revision](-[classifier]).[ext]" />
+		<property name="ivy.distrib.dir" value="${ivy.project.dir}/dist" />
+		<condition property="ivy.mode" value="hudson">
+			<isset property="env.BUILD_NUMBER" />
+		</condition>
+		<ivy:retrieve sync="true" />
+
+		<untar dest="build/www" compression="gzip">
+			<fileset dir="lib" includes="main/*-www*.tgz test/*-www*.tgz main/*-www*.tar.gz test/*-www*.tar.gz" />
+		</untar>
+	</target>
+
+	<target name="copy-resources-and-compile">
+		<available file="src/${dir}/resources" property="src.${dir}.resources.exists" value="true" />
+		<available file="src/${dir}/java" property="src.${dir}.java.exists" value="true" />
+
+		<antcall target="copy-resources" />
+		<antcall target="compile-directory" />
+	</target>
+
+	<target name="copy-resources" if="src.${dir}.resources.exists">
+		<echo message="Copying ${dir} resources" />
+		<mkdir dir="build/classes/${dir}" />
+		<copy todir="build/classes/${dir}">
+			<fileset dir="src/${dir}/resources" />
+		</copy>
+	</target>
+
+	<target name="compile-directory" if="src.${dir}.java.exists">
+		<echo message="Compiling ${dir} classes" />
+		<mkdir dir="build/classes/${dir}" />
+		<javac debug="yes" classpathref="${dir}.classpath" srcdir="src/${dir}/java" destdir="build/classes/${dir}" includeantruntime="false"/>
+	</target>
+
+	<target name="compile" depends="resolve-dependencies">
+		<foreach list="main,test,integration" target="copy-resources-and-compile" param="dir" />
+	</target>
+
+	<target name="test" depends="compile" description="Runs the Junit tests against the compiled code" unless="test.skip">
+		<available file="src/test/java" property="src.test.java.exists" value="true" />
+		<antcall target="-test.run" />
+	</target>
+
+	<target name="-test.run" if="src.test.java.exists">
+		<antcall target="unit.test" />
+	</target>
+
+	<target name="report" depends="test" unless="test.skip">
+		<available file="src/test/java" property="src.test.java.exists" value="true" />
+		<antcall target="-report" />
+	</target>
+
+	<target name="-report" if="src.test.java.exists">
+		<delete dir="${build.report.reports}" />
+		<antcall target="build.report" />
+	</target>
+
+	<target name="only.report" depends="compile">
+		<available file="src/test/java" property="src.test.java.exists" value="true" />
+		<antcall target="-report" />
+	</target>
+
+	<target name="jar" depends="report">
+		<available file="build/classes/main" property="build.classes.main.exists" value="true" />
+		<available file="src/main/www" property="src.main.www.exists" value="true" />
+		<antcall target="-jar" />
+		<antcall target="-tar" />
+	</target>
+
+	<target name="-jar" if="build.classes.main.exists">
+		<jar destfile="build/${ant.project.name}.jar">
+			<fileset dir="build/classes/main" />
+		</jar>
+	</target>
+
+	<target name="-tar" if="src.main.www.exists">
+		<tar destfile="build/${ant.project.name}-www.tgz" compression="gzip">
+			<fileset dir="src/main/www" />
+		</tar>
+	</target>
+
+	<target name="testing.check">
+		<condition property="src.test.java.exists">
+			<available file="src/test/java" />
+		</condition>
+	</target>
+
+	<target name="testing" depends="compile,testing.check" if="src.test.java.exists">
+		<pathconvert property="build.classes.testing.exists" setonempty="false">
+			<path>
+				<fileset dir="build/classes/test">
+					<include name="**/testing/*" />
+				</fileset>
+
+			</path>
+		</pathconvert>
+		<antcall target="-testing" />
+	</target>
+
+	<target name="-testing" if="build.classes.testing.exists">
+		<jar destfile="build/${ant.project.name}-testing.jar">
+			<fileset dir="build/classes/test">
+				<include name="**/testing/*" />
+			</fileset>
+		</jar>
+	</target>
+
+
+	<target name="integration" depends="compile" unless="test.skip">
+		<available file="src/integration/java" property="src.integration.java.exists" value="true" />
+		<antcall target="-integration.run" />
+	</target>
+
+	<target name="-integration.run" if="src.integration.java.exists">
+		<property name="integration.junit.dir" value="${build.report.build}/integration/junit" />
+		<mkdir dir="${integration.junit.dir}" />
+		<junit printsummary="yes" showoutput="yes" failureproperty="integration.fail" fork="yes" maxmemory="1024m" clonevm="true">
+			<classpath refid="integration.classpath" />
+			<formatter type="plain" />
+			<formatter type="xml" />
+			<batchtest fork="yes" todir="${integration.junit.dir}">
+				<fileset dir="src/integration/java" includes="**/*Test.java" />
+			</batchtest>
+		</junit>
+
+		<fail if="integration.fail" message="1 or more integration tests have failed" />
+	</target>
+
+	<target name="publish" depends="jar, testing, integration, document" unless="publish.skip">
+		<available file="build/${ant.project.name}.jar" property="artifact.exists" value="true" />
+		<antcall target="-dist" />
+		<antcall target="-publish" />
+	</target>
+
+	<target name="-dist" if="artifact.exists">
+		<mkdir dir="dist/jars" />
+		<mkdir dir="dist/tgzs" />
+		<mkdir dir="dist/zips" />
+		<copy file="build/${ant.project.name}.jar" tofile="dist/jars/${ant.project.name}.jar" />
+		<copy file="build/${ant.project.name}-testing.jar" tofile="dist/jars/${ant.project.name}-testing.jar" failonerror="false" />
+		<copy file="build/${ant.project.name}-www.tgz" tofile="dist/tgzs/${ant.project.name}-www.tgz" failonerror="false" />
+		<copy file="build/${ant.project.name}-docs.zip" tofile="dist/zips/${ant.project.name}-docs.zip" failonerror="false" />
+	</target>
+
+	<target name="-publish" if="artifact.exists">
+		<ivy:publish resolver="publish" artifactspattern="${ivy.distrib.dir}/[type]s/[artifact].[ext]" />
+	</target>
+
+	<target name="graph" depends="resolve-dependencies" description="Create Ivy report as graphml file">
+		<mkdir dir="build" />
+		<ivy:repreport xml="false" graph="true" todir="build" />
+	</target>
+</project>

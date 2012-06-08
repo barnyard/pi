@@ -1,0 +1,150 @@
+body,div,h1,h2,h3,p {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	text-align: center;
+	min-width: 100%;
+	font-family: sans-serif;
+}
+
+a:link,a:visited {
+	text-decoration: none;
+	color: #328;
+}
+
+a:hover,a:focus {
+	text-decoration: underline;
+}
+
+h1 {
+	margin: 30px;
+}
+
+.opsonly,.hidden {
+	display: none;
+}
+
+.feature {
+	margin: 50px 100px;
+}
+
+#header {
+	margin: 5px;
+	padding: 0;
+	text-align: right;
+	font-size: 85%;
+}
+
+#pickers {
+	margin: 15px 0;
+}
+
+.picker {
+	text-align: left;
+	padding: 5px 0;
+	margin: 5px 0;
+}
+
+.button {
+	padding: 10px 20px;
+}
+
+input,select {
+	padding: 7px 3px;
+	margin: 10px;
+}
+
+#menu {
+	float: left;
+	margin-left: 50px;
+	text-align: left;
+	min-height: 550px;
+	border: solid 2px #40d;
+	background-color: #ccf;
+	-moz-border-radius: 8px;
+	-webkit-border-radius: 8px;
+}
+
+#menu>img,#menu>h2 {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+#mainmenu>li {
+	display: block;
+	margin: 20px 0;
+	padding: 0 20px 0 10px;
+}
+
+#mainmenu>li>a {
+	color: #000;
+	font-weight: bold;
+	font-size: 1.0em;
+}
+
+#mainmenu>li>ul>a {
+	display: block;
+	margin: 10px 0;
+	font-size: 0.9em;
+}
+
+#mainmenu .submenu li {
+	display: block;
+	margin: 10px 0;
+	font-size: 0.9em;
+}
+
+#content {
+	position: absolute;
+	top: 10px;
+	left: 450px;
+	vertical-align: top;
+	overflow: visible;
+	min-width: 400px;
+	text-align: left;
+}
+
+#content h2 {
+	display: block;
+	padding: 20px 0;
+}
+
+#content #result {
+	font-family: monospace;
+	margin: 20px 0;
+}
+
+table {
+	border: 1px solid #000;
+	border-collapse: collapse;
+	padding: 20px;
+	margin: 20px;
+	text-align: left;
+	font-family: monospace;
+}
+
+th {
+	border: 1px solid #000;
+	padding: 6px;
+}
+
+td {
+	border: 1px solid #ccc;
+	padding: 6px;
+}
+
+.section {
+	padding: 20px 20px 20px 20px;
+	margin: 0px 30px;
+}
+
+#footer {
+	clear: both;
+	font-size: 75%;
+	margin: 50px 0 0 0;
+	padding: 0;
+	width: 350px;
+	text-align: center;
+}

@@ -1,0 +1,87 @@
+#!/bin/bash
+
+svnfile=hudson-robustness.log
+svn_root=https://pi:h3ll0@109.144.14.105/job/fr001-robustness/
+file=consoleText
+
+
+function get_file_from_svn() {
+    echo "Looking at scenario times for dev robustness build: $1"
+    build_number=$1
+    svnfile="$svn_root/$1/consoleText"
+  
+    wget -q --no-check-certificate $svnfile
+    
+}
+
+function get_scenario() {
+  sname=$(gawk "/\[$1\].*Starting/ {split(\$4,snames,\"\\\\[\"); print $4 snames[1]}" $2) 
+  sname=$(gawk "/\[$1\].*Starting/ {print \$4}" $2)
+  s_arr=( $sname )
+  sname=${s_arr:0}
+  
+}
+
+
+function get_duration() {
+  local scenario=$1
+  local file=$2
+  duration=$(gawk "/\[$scenario\].*$3/ {time=substr(\$3,0,8);split(time,times,\":\"); print times[1]*3600+times[2]*60+times[3]}" $file)
+  duration_arr=( $duration )
+  duration=${duration_arr:0}
+}
+
+function print_durations() {
+  for i in {0..4}
+    do
+      get_scenario $i $file
+      get_duration $i $file 'Starting'
+      if [ -n "$duration"  ] 
+        then
+          start=$duration
+          echo "START $start"
+          get_duration $i $file 'succeeded'
+          if [ -n "$duration" ]
+            then
+              delay=$(($duration - $start))
+              echo "Duration for scenario $i - $sname: $delay seconds"
+          else
+            echo "No success scenarios found for build $build_number and scenario $sname" 
+          fi
+      else 
+        if [ -z "$sname" ]
+           then
+             echo "No scenarios found for build $build_number"
+             break
+        fi
+        echo "No success scenarios found for build $build_number and scenario $sname"
+      fi
+  done
+
+  rm $file
+}
+
+if [ -n "$1" ]
+  then 
+    if [ -n "$2" ]
+      then
+        echo "Looking at scenario times in the range from build $1 to $2"
+        for i in `seq $1 $2`
+        do
+           get_file_from_svn $i
+           print_durations
+        done  
+         
+    else 
+      get_file_from_svn $1
+      print_durations
+    fi
+else 
+   echo "USAGE: $0 build_number [build_number2]    
+        where:
+          -- build_number is a hudson build number  
+          -- build_number2 is another optional build number if we want to examine a range of builds, from build_number to build_number2."
+   exit 0
+fi
+
+

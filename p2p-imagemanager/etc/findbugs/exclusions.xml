@@ -1,0 +1,5 @@
+<FindBugsFilter>
+     <Match>
+       <Bug code="SIC" />	<!--  exclude static inner class whining to allow closure-like patterns -->
+     </Match>
+</FindBugsFilter>

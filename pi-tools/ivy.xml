@@ -1,0 +1,16 @@
+<ivy-module version="2.0" xmlns:m="http://ant.apache.org/ivy/maven">
+    <info organisation="bt" module="pi-tools" />
+    <configurations>
+        <conf name="main" />
+    </configurations>
+    <publications>
+        <artifact name="pi-tools" type="tar.gz" conf="main" />
+    </publications>
+    <dependencies>
+        <dependency org="org.codehaus.groovy" name="groovy" rev="1.7.0">
+            <artifact name="groovy-all" />
+            <artifact name="groovy" type="source" ext="zip" m:classifier="sources" />
+        </dependency>
+        <dependency org="org.json" name="json" rev="20090605" />
+    </dependencies>
+</ivy-module>

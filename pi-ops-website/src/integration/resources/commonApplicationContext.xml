@@ -1,0 +1,187 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:sws="http://www.springframework.org/schema/web-services"
+	xmlns:sec="http://www.springframework.org/schema/security" xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+   	   http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+       http://www.springframework.org/schema/web-services http://www.springframework.org/schema/web-services/web-services-1.5.xsd
+       http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.0.xsd
+       http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.0.xsd">
+
+	<context:component-scan base-package="com.bt.pi">
+		<context:include-filter type="assignable" expression="com.bt.pi.core.entity.PiEntity" />
+		<context:include-filter type="assignable" expression="com.bt.pi.core.cli.commands.ManagementCommand" />
+		<context:include-filter type="assignable" expression="com.bt.pi.core.message.KoalaMessageBase" />
+		<context:exclude-filter type="assignable" expression="com.bt.pi.core.util.common.CommandRunner" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.app.volumemanager.*" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.app.instancemanager.*" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.app.networkmanager.*" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.app.imagemanager.*" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.sss.robustness.*" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.app.common.entities.watchers.*" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.api.service.*" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.api.servlet.*" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.api.security.*" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.core.cli.*" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.core.console.*" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.core.util.messaging.*" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.app.common.net.dhcp.*" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.core.dht.*MyDeletablePiEntity" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.core.past.*MyDhtPiEntity" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.core.dht.*MyPiEntity" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.core.dht.*MyDhtRWPiEntity" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.core.parser.*Test.*Entity.*" />
+	</context:component-scan>
+
+	<bean id="userService" class="com.bt.pi.api.service.UserService" />
+	<bean id="userManagementService" class="com.bt.pi.api.service.UserManagementService" />
+	<bean id="userPisssHelper" class="com.bt.pi.api.service.UserPisssHelper" />
+	<bean id="deleteUserHelper" class="com.bt.pi.api.service.DeleteUserHelper" />
+	<bean id="userCertificateHelper" class="com.bt.pi.api.service.UserCertificateHelper" />
+	<bean class="com.bt.pi.app.imagemanager.xml.ManifestBuilder" />
+	<bean class="com.bt.pi.app.imagemanager.xml.XMLParser" />
+	<bean class="com.bt.pi.app.imagemanager.xml.XPathEvaluator" />
+	<bean id="imageService" class="com.bt.pi.api.service.ImageServiceImpl" />
+	<bean id="imageRetriever" class="com.bt.pi.api.service.ImageRetriever" />
+	<bean id="imageServiceHelper" class="com.bt.pi.api.service.ImageServiceHelper" />
+	<bean id="apiApplicationManager" class="com.bt.pi.api.service.ApiApplicationManager" />
+	<bean id="ImageReportHandler" class="com.bt.pi.app.imagemanager.reporting.ImageReportHandler"/>
+	<bean id="ImageReportEntity" class="com.bt.pi.app.imagemanager.reporting.ImageReportEntity"/>
+	<bean id="ImageReportEntityCollection" class="com.bt.pi.app.imagemanager.reporting.ImageReportEntityCollection"/>
+	<bean class="com.bt.pi.app.instancemanager.watchers.UsersInstanceValidationWatcher"/>
+	<bean class="com.bt.pi.app.instancemanager.watchers.LocalStorageUserHandler"/>
+	
+	<!-- these are the service layer stubs -->
+	<bean id="availabilityZonesAndRegionsService" class="com.bt.pi.api.service.testing.AvailabilityZonesAndRegionsIntegrationImpl" />
+	<bean id="elasticBlockStorageService" class="com.bt.pi.api.service.testing.ElasticBlockStorageIntegrationImpl" />
+	<bean id="elasticIpAddressesService" class="com.bt.pi.api.service.testing.ElasticIpAddressesIntegrationImpl" />
+	<bean id="securityGroupService" class="com.bt.pi.api.service.testing.SecurityGroupServiceIntegrationImpl" />
+	<bean id="keyPairsService" class="com.bt.pi.api.service.testing.KeyPairsServiceIntegrationImpl" />
+	<bean id="terminateInstanceServiceHelper" class="com.bt.pi.app.instancemanager.handlers.TerminateInstanceServiceHelper" />
+	<bean id="pauseInstanceServiceHelper" class="com.bt.pi.app.instancemanager.handlers.PauseInstanceServiceHelper" />
+	<bean id="libvirtManager" class="com.bt.pi.app.instancemanager.libvirt.LibvirtManager"/>
+	<bean id="libvirtConnection" class="com.bt.pi.app.instancemanager.testing.StubLibvirtConnection"/>
+	<bean id="libvirtTemplateGenerator" class="com.bt.pi.app.instancemanager.libvirt.LibvirtTemplateGenerator"/>
+	<bean id="instancesService" class="com.bt.pi.api.service.InstancesServiceImpl" />
+	<bean id="describeInstancesServiceHelper" class="com.bt.pi.api.service.DescribeInstancesServiceHelper" />
+	<bean id="rebootInstanceServiceHelper" class="com.bt.pi.api.service.RebootInstanceServiceHelper" />
+	<bean id="getConsoleOutputInstanceServiceHelper" class="com.bt.pi.api.service.GetConsoleOutputInstanceServiceHelper" />
+	<bean id="runInstancesServiceHelper" class="com.bt.pi.api.service.RunInstancesServiceHelper" />
+	<bean id="mailSender" class="com.bt.pi.app.instancemanager.testing.StubMailSender"/>
+
+	<bean id="generalBlockingCache" class="com.bt.pi.core.dht.cache.BlockingDhtCache">
+		<property name="cache" ref="generalEhCache" />
+	</bean>
+
+	<bean id="log4jFileResource" class="org.springframework.core.io.ClassPathResource">
+		<constructor-arg value="log4j.xml" />
+	</bean>
+
+	<util:property-path id="log4jFile" path="log4jFileResource.file" />
+
+	<bean id="ehCacheManager"
+		class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean" />
+
+	<bean id="generalEhCache" class="org.springframework.cache.ehcache.EhCacheFactoryBean">
+		<property name="cacheName" value="generalEhCache" />
+		<property name="cacheManager" ref="ehCacheManager" />
+		<property name="maxElementsInMemory" value="100" />
+		<property name="overflowToDisk" value="false" />
+		<property name="eternal" value="false" />
+		<property name="timeToLive" value="600" />
+		<property name="timeToIdle" value="600" />
+	</bean>
+
+	<bean id="wsSecurityEngine" class="org.apache.ws.security.WSSecurityEngine"
+		factory-method="getInstance" />
+
+	<bean id="commandRunner" class="com.bt.pi.core.testing.StubCommandRunner">
+		<property name="commandExecutor" ref="stubCommandExecutor" />
+	</bean>
+
+	<bean id="stubCommandExecutor" class="com.bt.pi.core.testing.StubCommandExecutor">
+		<constructor-arg index="0" ref="taskExecutor" />
+	</bean>
+
+	<util:properties id="properties" location="classpath:p2p.properties" />
+
+	<bean class="com.bt.pi.core.conf.PropertyAnnotationAndPlaceholderConfigurer">
+		<property name="properties" ref="properties" />
+	</bean>
+
+	<bean id="taskExecutor"
+		class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+		<property name="corePoolSize" value="5" />
+		<property name="maxPoolSize" value="10" />
+		<property name="queueCapacity" value="25" />
+	</bean>
+
+	<bean id="scheduledExecutorService"
+		class="org.springframework.scheduling.concurrent.ScheduledExecutorFactoryBean">
+		<property name="continueScheduledExecutionAfterException"
+			value="true" />
+		<property name="poolSize" value="16" />
+	</bean>
+
+	<bean id="userCache" class="com.bt.pi.core.dht.cache.DhtCache">
+		<property name="cache" ref="userEhCache" />
+	</bean>
+
+	<bean id="userBlockingCache" class="com.bt.pi.core.dht.cache.BlockingDhtCache">
+		<property name="cache" ref="userEhCache" />
+	</bean>
+
+	<bean id="generalCache" class="com.bt.pi.core.dht.cache.DhtCache">
+		<property name="cache" ref="generalEhCache" />
+	</bean>
+
+	<bean id="userEhCache" class="org.springframework.cache.ehcache.EhCacheFactoryBean">
+		<property name="cacheName" value="userEhCache" />
+		<property name="cacheManager" ref="ehCacheManager" />
+		<property name="maxElementsInMemory" value="100" />
+		<property name="overflowToDisk" value="false" />
+		<property name="eternal" value="false" />
+		<property name="timeToLive" value="60" />
+		<property name="timeToIdle" value="60" />
+	</bean>
+
+	<bean id="freeMarkerConfiguration" class="org.springframework.ui.freemarker.FreeMarkerConfigurationFactoryBean">
+		<property name="templateLoaderPaths">
+			<list>
+				<value>classpath:templates</value>
+				<value>/</value>
+			</list>
+		</property>	
+		<property name="preferFileSystemAccess" value="false"/>
+	</bean>
+
+	<bean id="systemResourceStateCache" class="org.springframework.cache.ehcache.EhCacheFactoryBean">
+		<property name="cacheName" value="systemResourceStateCache" />
+		<property name="cacheManager" ref="ehCacheManager" />
+		<property name="maxElementsInMemory" value="100" />
+		<property name="overflowToDisk" value="false" />
+		<property name="eternal" value="false" />
+		<property name="timeToLive" value="900" />
+		<property name="timeToIdle" value="900" />
+	</bean>
+	
+	<bean id="dhtClientFactory" class="com.bt.pi.core.dht.DhtClientFactory">
+		<lookup-method bean="updateAwareDhtWriter" name="createEmptyBlockingWriter" />
+		<lookup-method bean="simpleDhtReader" name="createEmptyBlockingReader" />
+	</bean>
+
+	<import resource="applicationContext-p2p-ops-website.xml" />
+
+	<util:list id="errorLogAppenderFilterList">
+		<value>foo@bar.com</value>
+	</util:list>
+
+	<task:annotation-driven scheduler="myScheduler" />
+	<task:scheduler id="myScheduler" pool-size="10" />
+
+	<bean id="springMailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+  		<property name="host" value="localhost"/>
+	</bean>
+</beans>

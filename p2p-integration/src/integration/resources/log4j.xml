@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
+	<appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">
+		<param name="Target" value="System.out" />
+		<param name="Threshold" value="DEBUG" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="[%d{dd MM yyyy HH:mm:ss,SSS}] [%X{NODE_ID}] [%X{TRANSACTION_ID}] [%t] [%c{1}.%M %L] %-5p %m%n" />
+		</layout>
+	</appender>
+	<appender name="P2P_LOGFILE" class="org.apache.log4j.DailyRollingFileAppender">
+		<param name="File" value="build/integration/log/p2p.log" />
+		<param name="Threshold" value="DEBUG" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="[%d{dd MM yyyy HH:mm:ss,SSS}] [%X{NODE_ID}] [%X{TRANSACTION_ID}] [%t] [%c{1}.%M %L] %-5p %m%n" />
+		</layout>
+	</appender>
+	<appender name="PASTRY_LOGFILE" class="org.apache.log4j.RollingFileAppender">
+		<param name="File" value="build/integration/log/pastry.log" />
+		<param name="Threshold" value="DEBUG" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="[%d{dd MM yyyy HH:mm:ss,SSS}] [%X{TRANSACTION_ID}] [%c{1}:%t] %-5p %m%n" />
+		</layout>
+	</appender>
+
+	<category name="com.bt.pi.core.application.resource" additivity="false">
+		<priority value="ERROR" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</category>
+	
+	<category name="com.bt.pi.core.application.activation" additivity="false">
+		<priority value="debug" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</category>
+	
+	<category name="com.bt.pi.core.dht" additivity="false">
+		<priority value="INFO" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</category>
+	<category name="com.bt.pi.core.dht.storage.PersistentDhtStorage" additivity="false">
+		<priority value="ERROR" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</category>
+	<category name="com.bt.pi.core.util.common.CommandRunner" additivity="false">
+		<priority value="debug" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</category>
+
+	<category name="com.bt.pi.core.application.reporter" additivity="false">
+		<priority value="DEBUG" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</category>
+
+	<category name="com.bt.pi.app.instancemanager.watchers.LocalStorageUserHandler" additivity="false">
+		<priority value="DEBUG" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</category>
+	
+	<category name="com.bt.pi.app.instancemanager.handlers.XenRefreshHandler" additivity="false">
+		<priority value="DEBUG" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</category>
+	
+	<category name="com.bt.pi.ops.website" additivity="false">
+		<priority value="DEBUG" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</category>
+
+	<category name="com.bt.pi.core" additivity="false">
+		<priority value="INFO" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</category>
+
+	<category name="com.sun.jersey" additivity="false">
+		<priority value="ERROR" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</category>
+	<category name="org.jets3t" additivity="false">
+		<priority value="ERROR" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</category>
+	<root>
+		<priority value="info" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</root>
+</log4j:configuration>

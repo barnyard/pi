@@ -1,0 +1,27 @@
+<project name="pi-ops-website" default="local">
+
+	<!-- user-specific properties + default values -->
+	<property file="properties/${user.name}.properties" />
+	<property file="properties/build.properties" />
+
+	<import file="${p2p-build.base}/build.xml" />
+	
+	<target name="local" depends="check.js, default"/>
+
+	<target name="ci" depends="clean, check.js, publish"/>
+	
+	<target name="check.js">
+		<property name="src.dir" location="src/main/www"/>
+		<property name="search.string" value="console." />
+
+		<fileset id="matches" dir="${src.dir}" includes="*.js">
+		    <contains text="${search.string}" />
+		</fileset>
+
+		<fail message="Found '${search.string}' in one or more files in '${src.dir}'">
+		    <condition>
+		        <resourcecount when="greater" count="0" refid="matches" />
+		    </condition>
+		</fail>
+	</target>
+</project>

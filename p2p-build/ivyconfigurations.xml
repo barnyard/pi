@@ -1,0 +1,4 @@
+<configurations defaultconfmapping="*->default">
+	<conf name="main" />
+	<conf name="test" />
+</configurations>

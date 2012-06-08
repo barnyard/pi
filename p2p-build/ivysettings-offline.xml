@@ -1,0 +1,18 @@
+<ivysettings>
+
+  <!-- Use ~/.ivy2/shared for upload and download -->
+	<property name="ivy.shared.root" value="${ivy.default.ivy.user.dir}/shared" />
+	<property name="ivy.publish.root" value="${ivy.default.ivy.user.dir}/shared" />
+  
+  <resolvers>
+    <filesystem name="shared">
+      <ivy pattern="${ivy.shared.root}/${ivy.shared.pattern}" />
+      <artifact pattern="${ivy.shared.root}/${ivy.shared.pattern}" />
+    </filesystem>
+
+    <filesystem name="publish">
+      <ivy pattern="${ivy.publish.root}/${ivy.shared.pattern}" />
+      <artifact pattern="${ivy.publish.root}/${ivy.shared.pattern}" />
+    </filesystem>
+  </resolvers>
+</ivysettings>

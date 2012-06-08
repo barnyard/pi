@@ -1,0 +1,450 @@
+package com.bt.pi.app.networkmanager.iptables;
+
+import static org.junit.Assert.assertEquals;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import com.bt.pi.app.common.entities.InstanceAddress;
+import com.bt.pi.app.common.entities.NetworkProtocol;
+import com.bt.pi.app.common.entities.NetworkRule;
+import com.bt.pi.app.common.entities.NetworkRuleType;
+import com.bt.pi.app.common.entities.SecurityGroup;
+import com.bt.pi.app.common.net.iptables.IpTablesHelper;
+
+public class IpTablesBuilderTest {
+    private IpTablesBuilder ipTablesBuilder;
+    private IpTablesHelper ipTablesHelper;
+    private List<SecurityGroup> securityGroups;
+    private String bozoDefaultHash;
+    private String nutterDefaultHash;
+    private String abcDefaultHash;
+    private ArrayList<String> rules;
+    private SecurityGroup securityGroup1;
+
+    @Before
+    public void before() {
+        ipTablesHelper = new IpTablesHelper();
+        ipTablesBuilder = new IpTablesBuilder();
+        ipTablesBuilder.setIpTablesHelper(ipTablesHelper);
+
+        bozoDefaultHash = ipTablesBuilder.getMd5DigestHex("bozo:default");
+        nutterDefaultHash = ipTablesBuilder.getMd5DigestHex("nutter:default");
+        abcDefaultHash = ipTablesBuilder.getMd5DigestHex("abc:default");
+
+        NetworkRule networkRule1 = setupNetworkRule(NetworkRuleType.FIREWALL_OPEN, new String[] { "0.0.0.0/0" }, "default", NetworkProtocol.TCP, 22, 22);
+        NetworkRule networkRule2 = setupNetworkRule(NetworkRuleType.FIREWALL_OPEN, new String[] { "1.2.3.4/32" }, "default", NetworkProtocol.UDP, 0, 0);
+
+        securityGroup1 = new SecurityGroup("bozo", "default", 10L, "172.0.0.0", "255.255.255.240", "147.149.2.5", new HashSet<NetworkRule>());
+        securityGroup1.getInstances().put("172.0.0.3", new InstanceAddress("172.0.0.3", null, "aa:aa:aa:aa:aa:aa"));
+        securityGroup1.getInstances().put("172.0.0.2", new InstanceAddress("172.0.0.2", "1.2.3.4", "aa:aa:aa:aa:aa:aa"));
+        securityGroup1.setNetworkRules(new HashSet<NetworkRule>(Arrays.asList(new NetworkRule[] { networkRule1 })));
+
+        SecurityGroup securityGroup2 = new SecurityGroup("nutter", "default", 11L, "172.0.0.16", "255.255.255.240", "147.149.2.5", new HashSet<NetworkRule>());
+        securityGroup2.getInstances().put("172.0.0.18", new InstanceAddress("172.0.0.18", "5.6.7.8", "aa:aa:aa:aa:aa:aa"));
+        securityGroup2.setNetworkRules(new HashSet<NetworkRule>(Arrays.asList(new NetworkRule[] { networkRule2 })));
+
+        SecurityGroup securityGroup3 = new SecurityGroup("abc", "default", 12L, "172.0.0.32", "255.255.255.240", null, new HashSet<NetworkRule>());
+        securityGroup3.getInstances().put("172.0.0.45", new InstanceAddress("172.0.0.45", "9.10.11.12", "d0:0d:4a:1d:08:f7"));
+
+        securityGroups = new ArrayList<SecurityGroup>();
+        securityGroups.add(securityGroup1);
+        securityGroups.add(securityGroup2);
+        securityGroups.add(securityGroup3);
+
+        rules = new ArrayList<String>();
+        rules.add("-N POST-" + bozoDefaultHash);
+        rules.add("-A POSTROUTING -s 172.0.0.0/28 -j POST-" + bozoDefaultHash);
+        rules.add("-A PREROUTING -d 1.2.3.4 -j DNAT --to 172.0.0.2");
+        rules.add("-A OUTPUT -d 1.2.3.4 -j DNAT --to 172.0.0.2");
+        rules.add("-A POSTROUTING -o eth1 -j MASQUERADE");
+        rules.add("-A POSTROUTING -d ! 172.30.0.0/255.255.0.0 -j MASQUERADE");
+        rules.add("-A POST-" + bozoDefaultHash + " -s 172.0.0.2 -j SNAT --to 1.2.3.4");
+        rules.add("-N POST-" + nutterDefaultHash);
+        rules.add("-A POST-" + abcDefaultHash + " -s 172.0.0.45 -j SNAT --to 9.10.11.12");
+    }
+
+    private NetworkRule setupNetworkRule(NetworkRuleType networkRuleType, String[] sourceNetworks, String destinationSecurityGroupName, NetworkProtocol networkProtocol, int portRangeMin, int portRangeMax) {
+        NetworkRule networkRule = new NetworkRule();
+        networkRule.setNetworkRuleType(networkRuleType);
+        networkRule.setSourceNetworks(sourceNetworks);
+        networkRule.setDestinationSecurityGroupName(destinationSecurityGroupName);
+        networkRule.setNetworkProtocol(networkProtocol);
+        networkRule.setPortRangeMin(portRangeMin);
+        networkRule.setPortRangeMax(portRangeMax);
+        return networkRule;
+    }
+
+    @Test
+    public void shouldRemovePiChains() {
+        // act
+        List<String> res = ipTablesBuilder.removePiChainsAndRules(sampleIptablesOutput());
+
+        // assert
+        List<String> expectation = new ArrayList<String>();
+        expectation.add("*nat");
+        expectation.add(":PREROUTING ACCEPT [0:0]");
+        expectation.add(":POSTROUTING ACCEPT [2:120]");
+        expectation.add(":OUTPUT ACCEPT [2:120]");
+        expectation.add(":bb - [0:0]");
+        expectation.add("COMMIT");
+        expectation.add("# Completed on Fri Oct 16 09:48:48 2009");
+        expectation.add("# Generated by iptables-save v1.4.1.1 on Fri Oct 16 09:48:48 2009");
+        expectation.add("*filter");
+        expectation.add(":INPUT ACCEPT [212801:217224757]");
+        expectation.add(":FORWARD ACCEPT [0:0]");
+        expectation.add(":OUTPUT ACCEPT [148444:25148602]");
+        expectation.add(":aa+aa - [0:0]");
+        expectation.add(":aa/aa - [0:0]");
+        expectation.add(":aa_aa - [0:0]");
+        expectation.add("COMMIT");
+        expectation.add("# Completed on Fri Oct 16 09:48:48 2009");
+        System.err.println(res);
+        assertEquals(17, res.size());
+        assertEquals(expectation, res);
+    }
+
+    @Test
+    public void shouldRemovePiChainsButRetainExclusions() {
+        // act
+        List<String> res = ipTablesBuilder.removePiChainsAndRules(sampleIptablesOutput(), Arrays.asList(new String[] { IpTablesManager.PI_CHAIN_DEFINITION, IpTablesManager.PI_CHAIN_FORWARD }));
+
+        // assert
+        List<String> expectation = new ArrayList<String>();
+        expectation.add("*nat");
+        expectation.add(":PREROUTING ACCEPT [0:0]");
+        expectation.add(":POSTROUTING ACCEPT [2:120]");
+        expectation.add(":OUTPUT ACCEPT [2:120]");
+        expectation.add(":bb - [0:0]");
+        expectation.add("COMMIT");
+        expectation.add("# Completed on Fri Oct 16 09:48:48 2009");
+        expectation.add("# Generated by iptables-save v1.4.1.1 on Fri Oct 16 09:48:48 2009");
+        expectation.add("*filter");
+        expectation.add(":INPUT ACCEPT [212801:217224757]");
+        expectation.add(":FORWARD ACCEPT [0:0]");
+        expectation.add(":OUTPUT ACCEPT [148444:25148602]");
+        expectation.add(":aa+aa - [0:0]");
+        expectation.add(":aa/aa - [0:0]");
+        expectation.add(":aa_aa - [0:0]");
+        expectation.add(":pi-chain - [0:0]");
+        expectation.add("-A FORWARD -j pi-chain");
+        expectation.add("COMMIT");
+        expectation.add("# Completed on Fri Oct 16 09:48:48 2009");
+
+        assertEquals(19, res.size());
+        assertEquals(expectation, res);
+    }
+
+    @Test
+    public void shouldGenerateFilterTable() {
+        // setup
+        List<String> expected = new ArrayList<String>();
+        // expected.add("-N pi-chain");
+        // expected.add("-A FORWARD -j pi-chain");
+        expected.add("-N FLTR-" + bozoDefaultHash);
+        expected.add("-A pi-chain -d 172.0.0.0/28 -j FLTR-" + bozoDefaultHash);
+        expected.add("-A FLTR-" + bozoDefaultHash + " -s 0.0.0.0/0 -d 172.0.0.0/28 -p tcp --dport 22:22 -j ACCEPT");
+        expected.add("-N FLTR-" + nutterDefaultHash);
+        expected.add("-A pi-chain -d 172.0.0.16/28 -j FLTR-" + nutterDefaultHash);
+        expected.add("-A FLTR-" + nutterDefaultHash + " -s 1.2.3.4/32 -d 172.0.0.16/28 -p udp -j ACCEPT");
+        expected.add("-N FLTR-" + abcDefaultHash);
+        expected.add("-A pi-chain -d 172.0.0.32/28 -j FLTR-" + abcDefaultHash);
+
+        // act
+        List<String> filterLines = ipTablesBuilder.generateFilterTable(securityGroups, new ArrayList<String>());
+
+        // assert
+        assertEquals(expected, filterLines);
+    }
+
+    @Test
+    public void shouldNotGenerateFilterTableForSecurityGroupWhichIsNotPopulated() {
+        // setup
+        SecurityGroup invalidSecurityGroup = new SecurityGroup("newowner", "sginvalid", null, null, null, null, null);
+        securityGroups.add(invalidSecurityGroup);
+
+        List<String> expected = new ArrayList<String>();
+
+        expected.add("-N FLTR-" + bozoDefaultHash);
+        expected.add("-A pi-chain -d 172.0.0.0/28 -j FLTR-" + bozoDefaultHash);
+        expected.add("-A FLTR-" + bozoDefaultHash + " -s 0.0.0.0/0 -d 172.0.0.0/28 -p tcp --dport 22:22 -j ACCEPT");
+        expected.add("-N FLTR-" + nutterDefaultHash);
+        expected.add("-A pi-chain -d 172.0.0.16/28 -j FLTR-" + nutterDefaultHash);
+        expected.add("-A FLTR-" + nutterDefaultHash + " -s 1.2.3.4/32 -d 172.0.0.16/28 -p udp -j ACCEPT");
+        expected.add("-N FLTR-" + abcDefaultHash);
+        expected.add("-A pi-chain -d 172.0.0.32/28 -j FLTR-" + abcDefaultHash);
+
+        // act
+        List<String> filterLines = ipTablesBuilder.generateFilterTable(securityGroups, new ArrayList<String>());
+
+        // assert
+        assertEquals(expected, filterLines);
+    }
+
+    @Test
+    public void shouldGenerateFilterTableWithoutAddingAlreadyExistingChains() {
+        // act
+        List<String> existingChains = new ArrayList<String>();
+        existingChains.add("FLTR-" + nutterDefaultHash);
+        existingChains.add("FLTR-" + abcDefaultHash);
+        List<String> filterLines = ipTablesBuilder.generateFilterTable(securityGroups, existingChains);
+
+        // assert
+        List<String> expected = new ArrayList<String>();
+        // expected.add("-N pi-chain");
+        // expected.add("-A FORWARD -j pi-chain");
+        expected.add("-N FLTR-" + bozoDefaultHash);
+        expected.add("-A pi-chain -d 172.0.0.0/28 -j FLTR-" + bozoDefaultHash);
+        expected.add("-A FLTR-" + bozoDefaultHash + " -s 0.0.0.0/0 -d 172.0.0.0/28 -p tcp --dport 22:22 -j ACCEPT");
+        expected.add("-A pi-chain -d 172.0.0.16/28 -j FLTR-" + nutterDefaultHash);
+        expected.add("-A FLTR-" + nutterDefaultHash + " -s 1.2.3.4/32 -d 172.0.0.16/28 -p udp -j ACCEPT");
+        expected.add("-A pi-chain -d 172.0.0.32/28 -j FLTR-" + abcDefaultHash);
+
+        assertEquals(expected, filterLines);
+    }
+
+    @Test
+    public void shouldGenerateNatTable() {
+        // act
+        List<String> natLines = ipTablesBuilder.generateNatTable(securityGroups, new ArrayList<String>());
+
+        // assert
+        List<String> expected = new ArrayList<String>();
+        expected.add("-N PI-PREROUTING");
+        expected.add("-A PREROUTING -j PI-PREROUTING");
+        expected.add("-N PI-OUTPUT");
+        expected.add("-A OUTPUT -j PI-OUTPUT");
+        expected.add("-N POST-" + bozoDefaultHash);
+        expected.add("-I POSTROUTING -s 172.0.0.0/28 -j POST-" + bozoDefaultHash);
+        expected.add("-A PI-PREROUTING -d 1.2.3.4 -j DNAT --to 172.0.0.2");
+        expected.add("-A PI-OUTPUT -d 1.2.3.4 -j DNAT --to 172.0.0.2");
+        expected.add("-A POST-" + bozoDefaultHash + " -s 172.0.0.2 -j SNAT --to 1.2.3.4");
+        expected.add("-N POST-" + nutterDefaultHash);
+        expected.add("-I POSTROUTING -s 172.0.0.16/28 -j POST-" + nutterDefaultHash);
+        expected.add("-A PI-PREROUTING -d 5.6.7.8 -j DNAT --to 172.0.0.18");
+        expected.add("-A PI-OUTPUT -d 5.6.7.8 -j DNAT --to 172.0.0.18");
+        expected.add("-A POST-" + nutterDefaultHash + " -s 172.0.0.18 -j SNAT --to 5.6.7.8");
+        expected.add("-N POST-" + abcDefaultHash);
+        expected.add("-I POSTROUTING -s 172.0.0.32/28 -j POST-" + abcDefaultHash);
+        expected.add("-A PI-PREROUTING -d 9.10.11.12 -j DNAT --to 172.0.0.45");
+        expected.add("-A PI-OUTPUT -d 9.10.11.12 -j DNAT --to 172.0.0.45");
+        expected.add("-A POST-" + abcDefaultHash + " -s 172.0.0.45 -j SNAT --to 9.10.11.12");
+
+        for (int i = 0; i < Math.max(expected.size(), natLines.size()); i++) {
+            assertEquals(expected.get(i), natLines.get(i));
+        }
+    }
+
+    @Test
+    public void shouldNotBarfOnNullEntryWhenGeneratingNatTable() {
+        // setup
+        securityGroup1.getInstances().put("fred", null);
+
+        // act
+        ipTablesBuilder.generateNatTable(securityGroups, new ArrayList<String>());
+    }
+
+    @Test
+    public void shouldNotGenerateNatTableForSecurityGroupWhichIsNotPopulated() {
+        // act
+        SecurityGroup invalidSecurityGroup = new SecurityGroup("newowner", "sginvalid", null, null, null, null, null);
+        securityGroups.add(invalidSecurityGroup);
+        List<String> natLines = ipTablesBuilder.generateNatTable(securityGroups, new ArrayList<String>());
+
+        // assert
+        List<String> expected = new ArrayList<String>();
+        expected.add("-N PI-PREROUTING");
+        expected.add("-A PREROUTING -j PI-PREROUTING");
+        expected.add("-N PI-OUTPUT");
+        expected.add("-A OUTPUT -j PI-OUTPUT");
+        expected.add("-N POST-" + bozoDefaultHash);
+        expected.add("-I POSTROUTING -s 172.0.0.0/28 -j POST-" + bozoDefaultHash);
+        expected.add("-A PI-PREROUTING -d 1.2.3.4 -j DNAT --to 172.0.0.2");
+        expected.add("-A PI-OUTPUT -d 1.2.3.4 -j DNAT --to 172.0.0.2");
+        expected.add("-A POST-" + bozoDefaultHash + " -s 172.0.0.2 -j SNAT --to 1.2.3.4");
+        expected.add("-N POST-" + nutterDefaultHash);
+        expected.add("-I POSTROUTING -s 172.0.0.16/28 -j POST-" + nutterDefaultHash);
+        expected.add("-A PI-PREROUTING -d 5.6.7.8 -j DNAT --to 172.0.0.18");
+        expected.add("-A PI-OUTPUT -d 5.6.7.8 -j DNAT --to 172.0.0.18");
+        expected.add("-A POST-" + nutterDefaultHash + " -s 172.0.0.18 -j SNAT --to 5.6.7.8");
+        expected.add("-N POST-" + abcDefaultHash);
+        expected.add("-I POSTROUTING -s 172.0.0.32/28 -j POST-" + abcDefaultHash);
+        expected.add("-A PI-PREROUTING -d 9.10.11.12 -j DNAT --to 172.0.0.45");
+        expected.add("-A PI-OUTPUT -d 9.10.11.12 -j DNAT --to 172.0.0.45");
+        expected.add("-A POST-" + abcDefaultHash + " -s 172.0.0.45 -j SNAT --to 9.10.11.12");
+
+        for (int i = 0; i < Math.max(expected.size(), natLines.size()); i++) {
+            assertEquals(expected.get(i), natLines.get(i));
+        }
+    }
+
+    @Test
+    public void shouldGenerateNatTableWithoutAddingAlreadyExistingChains() {
+        // act
+        List<String> existingChains = new ArrayList<String>();
+        existingChains.add("POST-" + nutterDefaultHash);
+        existingChains.add("POST-" + abcDefaultHash);
+        List<String> natLines = ipTablesBuilder.generateNatTable(securityGroups, existingChains);
+
+        // assert
+        List<String> expected = new ArrayList<String>();
+        expected.add("-N PI-PREROUTING");
+        expected.add("-A PREROUTING -j PI-PREROUTING");
+        expected.add("-N PI-OUTPUT");
+        expected.add("-A OUTPUT -j PI-OUTPUT");
+        expected.add("-N POST-" + bozoDefaultHash);
+        expected.add("-I POSTROUTING -s 172.0.0.0/28 -j POST-" + bozoDefaultHash);
+        expected.add("-A PI-PREROUTING -d 1.2.3.4 -j DNAT --to 172.0.0.2");
+        expected.add("-A PI-OUTPUT -d 1.2.3.4 -j DNAT --to 172.0.0.2");
+        expected.add("-A POST-" + bozoDefaultHash + " -s 172.0.0.2 -j SNAT --to 1.2.3.4");
+        expected.add("-I POSTROUTING -s 172.0.0.16/28 -j POST-" + nutterDefaultHash);
+        expected.add("-A PI-PREROUTING -d 5.6.7.8 -j DNAT --to 172.0.0.18");
+        expected.add("-A PI-OUTPUT -d 5.6.7.8 -j DNAT --to 172.0.0.18");
+        expected.add("-A POST-" + nutterDefaultHash + " -s 172.0.0.18 -j SNAT --to 5.6.7.8");
+        expected.add("-I POSTROUTING -s 172.0.0.32/28 -j POST-" + abcDefaultHash);
+        expected.add("-A PI-PREROUTING -d 9.10.11.12 -j DNAT --to 172.0.0.45");
+        expected.add("-A PI-OUTPUT -d 9.10.11.12 -j DNAT --to 172.0.0.45");
+        expected.add("-A POST-" + abcDefaultHash + " -s 172.0.0.45 -j SNAT --to 9.10.11.12");
+
+        for (int i = 0; i < Math.max(expected.size(), natLines.size()); i++) {
+            assertEquals(expected.get(i), natLines.get(i));
+        }
+    }
+
+    @Test
+    public void shouldGenerateFilterFlushRules() {
+        // act
+        List<String> lines = ipTablesBuilder.generateFilterFlushRules(new String[] { "pi-chain", "FLTR-abc", "POST-def", "some other chain" }, new ArrayList<String>());
+
+        // assert
+        List<String> expected = new ArrayList<String>();
+        expected.add("-D FORWARD -j pi-chain");
+        expected.add("-F pi-chain");
+        expected.add("-F FLTR-abc");
+        expected.add("-X FLTR-abc");
+        // note we're not removing pi-chain as it will inevitably be needed again
+
+        assertEquals(expected.size(), lines.size());
+        for (int i = 0; i < expected.size(); i++)
+            assertEquals(expected.get(i), lines.get(i));
+    }
+
+    @Test
+    public void shouldGenerateFilterFlushRulesWithoutDeletingNewRule() {
+        // act
+        List<String> newChains = new ArrayList<String>();
+        newChains.add("FLTR-abc");
+        newChains.add("pi-chain");
+        newChains.add("some-other-chain");
+        List<String> lines = ipTablesBuilder.generateFilterFlushRules(new String[] { "pi-chain", "FLTR-abc", "POST-def", "some other chain" }, newChains);
+
+        // assert
+        List<String> expected = new ArrayList<String>();
+        expected.add("-D FORWARD -j pi-chain");
+        expected.add("-F pi-chain");
+        expected.add("-F FLTR-abc");
+
+        assertEquals(expected.size(), lines.size());
+        for (int i = 0; i < expected.size(); i++)
+            assertEquals(expected.get(i), lines.get(i));
+    }
+
+    @Test
+    public void shouldGenerateNatFlushRules() {
+        // act
+        List<String> natLines = ipTablesBuilder.generateNatFlushRules(new String[] { "pi-chain", "FLTR-abc", "POST-def", "some other chain", }, rules.toArray(new String[rules.size()]), new ArrayList<String>());
+
+        // assert
+        List<String> expected = new ArrayList<String>();
+        expected.add("-D POSTROUTING -s 172.0.0.0/28 -j POST-" + bozoDefaultHash);
+        expected.add("-D PREROUTING -d 1.2.3.4 -j DNAT --to 172.0.0.2");
+        expected.add("-D OUTPUT -d 1.2.3.4 -j DNAT --to 172.0.0.2");
+        expected.add("-D POST-" + bozoDefaultHash + " -s 172.0.0.2 -j SNAT --to 1.2.3.4");
+        expected.add("-D POST-" + abcDefaultHash + " -s 172.0.0.45 -j SNAT --to 9.10.11.12");
+        expected.add("-F POST-def");
+        // Add this back if chain removal restored (see comment in src file)
+        // expected.add("-X POST-def");
+
+        assertEquals(expected.size(), natLines.size());
+        for (int i = 0; i < expected.size(); i++)
+            assertEquals(expected.get(i), natLines.get(i));
+    }
+
+    @Test
+    public void shouldGenerateNatFlushRulesWithoutDeletingNewRule() {
+        // act
+        List<String> newChains = new ArrayList<String>();
+        newChains.add("POST-def");
+        newChains.add("some-other-chain");
+        List<String> natLines = ipTablesBuilder.generateNatFlushRules(new String[] { "pi-chain", "FLTR-abc", "POST-def", "some other chain", }, rules.toArray(new String[rules.size()]), newChains);
+
+        // assert
+        List<String> expected = new ArrayList<String>();
+        expected.add("-D POSTROUTING -s 172.0.0.0/28 -j POST-" + bozoDefaultHash);
+        expected.add("-D PREROUTING -d 1.2.3.4 -j DNAT --to 172.0.0.2");
+        expected.add("-D OUTPUT -d 1.2.3.4 -j DNAT --to 172.0.0.2");
+        expected.add("-D POST-" + bozoDefaultHash + " -s 172.0.0.2 -j SNAT --to 1.2.3.4");
+        expected.add("-D POST-" + abcDefaultHash + " -s 172.0.0.45 -j SNAT --to 9.10.11.12");
+        expected.add("-F POST-def");
+
+        assertEquals(expected.size(), natLines.size());
+        for (int i = 0; i < expected.size(); i++)
+            assertEquals(expected.get(i), natLines.get(i));
+    }
+
+    private List<String> sampleIptablesOutput() {
+        List<String> sb = new ArrayList<String>();
+        sb.add("*nat");
+        sb.add(":PREROUTING ACCEPT [0:0]");
+        sb.add(":POSTROUTING ACCEPT [2:120]");
+        sb.add(":OUTPUT ACCEPT [2:120]");
+        sb.add(":PI-PREROUTING ACCEPT [0:0]");
+        sb.add(":PI-OUTPUT ACCEPT [0:0]");
+        sb.add(":POST-9W0ioE23GzlYxZDnfEkrFw== - [0:0]");
+        sb.add(":POST-hgvHy68+HHdL/uFREcfE1Q== - [0:0]");
+        sb.add(":POST-sOPwadtSCBogG/2OYDBM0w== - [0:0]");
+        sb.add(":bb - [0:0]");
+        sb.add("-A PREROUTING -j PI-PREROUTING");
+        sb.add("-A OUTPUT -j PI-OUTPUT");
+        sb.add("-A PI-PREROUTING -d 1.2.3.4/32 -j DNAT --to-destination 172.0.0.2 ");
+        sb.add("-A PI-PREROUTING -d 5.6.7.8/32 -j DNAT --to-destination 172.0.0.18");
+        sb.add("-A PI-PREROUTING -d 9.10.11.12/32 -j DNAT --to-destination 172.0.0.45");
+        sb.add("-A POSTROUTING -s 172.0.0.32/28 -j POST-hgvHy68+HHdL/uFREcfE1Q==");
+        sb.add("-A POSTROUTING -s 172.0.0.16/28 -j POST-9W0ioE23GzlYxZDnfEkrFw==");
+        sb.add("-A POSTROUTING -s 172.0.0.0/28 -j POST-sOPwadtSCBogG/2OYDBM0w==");
+        sb.add("-A PI-OUTPUT -d 1.2.3.4/32 -j DNAT --to-destination 172.0.0.2");
+        sb.add("-A PI-OUTPUT -d 5.6.7.8/32 -j DNAT --to-destination 172.0.0.18");
+        sb.add("-A PI-OUTPUT -d 9.10.11.12/32 -j DNAT --to-destination 172.0.0.45");
+        sb.add("-A POST-9W0ioE23GzlYxZDnfEkrFw== -s 172.0.0.18/32 -j SNAT --to-source 5.6.7.8");
+        sb.add("-A POST-hgvHy68+HHdL/uFREcfE1Q== -s 172.0.0.45/32 -j SNAT --to-source 9.10.11.12");
+        sb.add("-A POST-sOPwadtSCBogG/2OYDBM0w== -s 172.0.0.2/32 -j SNAT --to-source 1.2.3.4");
+        sb.add("COMMIT");
+        sb.add("# Completed on Fri Oct 16 09:48:48 2009");
+        sb.add("# Generated by iptables-save v1.4.1.1 on Fri Oct 16 09:48:48 2009");
+        sb.add("*filter");
+        sb.add(":INPUT ACCEPT [212801:217224757]");
+        sb.add(":FORWARD ACCEPT [0:0]");
+        sb.add(":OUTPUT ACCEPT [148444:25148602]");
+        sb.add(":FLTR-9W0ioE23GzlYxZDnfEkrFw== - [0:0]");
+        sb.add(":FLTR-hgvHy68+HHdL/uFREcfE1Q== - [0:0]");
+        sb.add(":FLTR-sOPwadtSCBogG/2OYDBM0w== - [0:0]");
+        sb.add(":aa+aa - [0:0]");
+        sb.add(":aa/aa - [0:0]");
+        sb.add(":aa_aa - [0:0]");
+        sb.add(":pi-chain - [0:0]");
+        sb.add("-A FORWARD -j pi-chain");
+        sb.add("-A FLTR-9W0ioE23GzlYxZDnfEkrFw== -s 1.2.3.4/32 -d 172.0.0.16/28 -p udp -j ACCEPT");
+        sb.add("-A FLTR-sOPwadtSCBogG/2OYDBM0w== -d 172.0.0.0/28 -p tcp -m tcp --dport 22 -j ACCEPT");
+        sb.add("-A pi-chain -d 172.0.0.0/28 -j FLTR-sOPwadtSCBogG/2OYDBM0w==");
+        sb.add("-A pi-chain -d 172.0.0.16/28 -j FLTR-9W0ioE23GzlYxZDnfEkrFw==");
+        sb.add("-A pi-chain -d 172.0.0.32/28 -j FLTR-hgvHy68+HHdL/uFREcfE1Q==");
+        sb.add("COMMIT");
+        sb.add("# Completed on Fri Oct 16 09:48:48 2009");
+        return sb;
+    }
+}

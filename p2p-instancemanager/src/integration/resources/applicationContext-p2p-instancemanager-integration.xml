@@ -1,0 +1,28 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+                http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+                http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.5.xsd
+                http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd">
+
+	<bean id="commandRunner" class="com.bt.pi.core.testing.StubCommandRunner">
+		<property name="commandExecutor" ref="stubCommandExecutor" />
+	</bean>
+	
+	<bean id="stubCommandExecutor" class="com.bt.pi.core.testing.StubCommandExecutor">
+		<constructor-arg index="0" ref="taskExecutor" />
+	</bean>
+
+	<bean id="networkManagerApplication" class="com.bt.pi.app.instancemanager.testing.StubNetworkManagerApplication" />
+
+	<bean id="libvirtConnection" class="com.bt.pi.app.instancemanager.testing.StubLibvirtConnection" />
+
+	<bean id="stubDeviceUtils" class="com.bt.pi.app.common.testing.StubDeviceUtils" />
+
+	<bean id="fileManager" class="com.bt.pi.app.instancemanager.testing.StubFileManager" />
+	
+	<bean id="mailSender" class="com.bt.pi.app.instancemanager.testing.StubMailSender"/>
+</beans>

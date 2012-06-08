@@ -1,0 +1,11 @@
+EUCA_KEY_DIR=$(dirname $(readlink -f ${BASH_SOURCE}))
+export S3_URL=http://efr001.atl1.cloud21cn.com:8773/services/Walrus
+export EC2_URL=http://localhost:8773/services/Eucalyptus
+export EC2_PRIVATE_KEY=${EUCA_KEY_DIR}/euca2-atlanta-robustness-2fec3f68-pk.pem
+export EC2_CERT=${EUCA_KEY_DIR}/euca2-atlanta-robustness-2fec3f68-cert.pem
+export EUCALYPTUS_CERT=${EUCA_KEY_DIR}/cloud-cert.pem
+export EC2_ACCESS_KEY='-eCa_u9VMnJS7Y4Ww6OYCg'
+export EC2_SECRET_KEY='tCEIgWKduE2B3c9KPHwGLwItUNdRc6jTGOcuvA'
+export EC2_USER_ID='001161693035'
+alias ec2-bundle-image="ec2-bundle-image --cert ${EC2_CERT} --privatekey ${EC2_PRIVATE_KEY} --user 001161693035 --ec2cert ${EUCALYPTUS_CERT}"
+alias ec2-upload-bundle="ec2-upload-bundle -a ${EC2_ACCESS_KEY} -s ${EC2_SECRET_KEY} --url ${S3_URL} --ec2cert ${EUCALYPTUS_CERT}"

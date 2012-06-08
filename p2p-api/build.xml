@@ -1,0 +1,54 @@
+<project name="p2p-api" default="default">
+
+	<!-- user-specific properties + default values -->
+	<property file="properties/${user.name}.properties" />
+	<property file="properties/build.properties" />
+
+	<import file="${p2p-build.base}/build.xml" />
+
+	<target name="check-binding-uptodate">
+		<uptodate property="${ec2.version}.ec2.xmlBuild.notRequired" targetfile="${lib.main}/xmlbeans.${ec2.version}.ec2.jar">
+			<srcfiles dir="src/main/resources" includes="${ec2.version}.ec2.xsd" />
+		</uptodate>
+	</target>
+
+	<target name="generate-binding" unless="${ec2.version}.ec2.xmlBuild.notRequired" depends="check-binding-uptodate">
+		<delete file="${lib.main}/xmlbeans.${ec2.version}.ec2.jar" />
+		<taskdef name="xmlbean" classname="org.apache.xmlbeans.impl.tool.XMLBean" classpathref="main.classpath" />
+		<xmlbean destfile="lib/main/xmlbeans.${ec2.version}.ec2.jar" classpathref="main.classpath">
+			<fileset dir="src/main/resources" includes="${ec2.version}.ec2.xsd" />
+		</xmlbean>
+	</target>
+
+	<target name="generate" depends="resolve-dependencies" description="Generate Bindings">
+		<foreach list="2008-12-01,2009-04-04,2010-08-31" param="ec2.version" target="generate-binding" />
+	</target>
+
+	<target name="generate.certificate">
+	  <mkdir dir="build" /> 
+	  <delete file="build/keystore" /> 
+	<exec executable="keytool" failonerror="yes">
+	  <arg line="-genkey -keystore build/keystore -storepass h3ll04g41n! -keypass h3ll04g41n! -alias api -keyalg RSA -dname 'CN=www.bt.com, OU=api, O=BT, L=Baynard, S=London, C=UK' -validity 360" /> 
+	</exec>
+	<exec executable="keytool" failonerror="yes">
+	  <arg line="-certreq -alias api -keystore build/keystore -file build/api.csr -storepass h3ll04g41n! -keypass h3ll04g41n!" /> 
+	</exec>
+	<exec executable="keytool" failonerror="yes">
+				<arg line="-exportcert -alias api -keystore build/keystore -file build/server.key -storepass h3ll04g41n! -keypass h3ll04g41n!"/>
+	</exec> 
+	<exec executable="openssl" failonerror="yes">
+				<arg line="genrsa -des3 -out build/server.key 1024"/>
+	</exec> 
+	<exec executable="openssl" failonerror="yes">
+				<arg line="req -newkey rsa:1024	-keyout build/server.key -out build/server.csr -batch -passin pass:h3ll04g41n!"/>
+	</exec> 
+	<copy file="build/server.key" tofile="build/server.key.org" overwrite="true"/> 
+	<exec executable="openssl" failonerror="yes">
+				<arg line="rsa -in build/server.key.org -out build/server.key"/>
+	</exec> 
+	<exec executable="openssl" failonerror="yes">
+				<arg line="ca -days 365 -in build/api.csr -out build/api.crt"/>
+	</exec>
+  </target>
+		
+</project>

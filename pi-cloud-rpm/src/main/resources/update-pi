@@ -1,0 +1,192 @@
+#!/bin/bash
+
+echo $HOSTNAME | grep container
+if [ $? -eq 0 ]; then
+	echo "This script cannot be run on a vm-container. It must be run on the front end."
+	exit -1
+fi
+
+RPM_URL=$1
+if [ -z "$RPM_URL" ]; then
+echo "You must specify the RPM URL" 1>&2
+exit 1
+fi
+
+RPM_URL_WITH_CREDENTIALS=`echo $RPM_URL|awk -F// '{printf "%s//pi:h3ll0@%s", $1, $2}'`
+
+SVN_REVISION=`echo $RPM_URL_WITH_CREDENTIALS|awk '{split($0,a,"-"); l = length(a); split(a[l],b,".");print b[1]}'`
+
+UPDATE_PI_URL=`echo $RPM_URL_WITH_CREDENTIALS|awk -Fbuild '{printf "%sbuild/install/opt/pi/current/update-pi", $1}'`
+
+#update this script
+tail -n1 $0 | grep $SVN_REVISION &> /dev/null
+if [ $? -ne 0 ]; then
+	echo updating update script to revision $SVN_REVISION
+	URL=$UPDATE_PI_URL
+
+	curl -ksI $URL 1> /dev/null
+	if [ $? -ne 0 ]; then
+        	echo "The release number specified does not exist, is not currently available or does not have an update script." 1>&2
+	        exit 2
+	fi
+
+	wget -q --no-check-certificate -O $0 $URL
+	echo "#$SVN_REVISION" >> $0
+	chmod +x $0
+	$0 $@  
+	exit $?
+fi
+
+
+URL=$RPM_URL_WITH_CREDENTIALS
+
+curl -ksI $URL 1> /dev/null
+if [ $? -ne 0 ]; then
+	echo "The release number specified does not exist or is not currently available." 1>&2
+	exit 2
+fi
+
+
+cd /export/rocks/install/contrib/5.3/x86_64/RPMS
+rm -f pi-cloud*.rpm
+
+echo "Retrieving rpm release $SVN_REVISION"
+wget -q --no-check-certificate $URL
+if [ $? -ne 0 ]; then
+	echo "Unable to retrieve the rpm at this time." 1>&2
+	exit 4
+fi
+
+# archive pi-cloud rpm
+mkdir -p /export/pi-ops/releases
+cp -vf pi-cloud-*.rpm /export/pi-ops/releases
+
+rm -rf /export/rocks/install/contrib/5.3/x86_64/RPMS/cachedir 
+rm -rf /export/rocks/install/contrib/5.3/x86_64/RPMS/rocks-dist
+
+echo "Building rocks distro"
+cd /export/rocks/install && rocks create distro 1> /dev/null
+if [ $? -ne 0 ]; then
+	echo "Unable to build rocks distribution." 1>&2
+	exit 8
+fi
+
+unset http_proxy
+unset https_proxy
+
+yum clean all
+yum list pi-cloud | grep $SVN_REVISION 1> /dev/null
+if [ $? -ne 0 ]; then
+	echo "RPM was not upgraded in the yum repository." 1>&2
+	exit 16
+fi
+
+echo Pi distribution on the front end has been upgraded to release $SVN_REVISION
+echo
+
+while read -s -n 1 -t 1;do :;done
+read -p "Do you want to upgrade Pi on all vm-containers now? [yn]" -n 1 -s ; echo
+if [ "$REPLY" != "y" ] ; then
+	if [ "$REPLY" != "Y" ] ; then
+		echo Not upgrading pi on vm-containers
+		exit 0
+	fi
+fi
+
+APP_CONTAINERS=`ssh vm-container-0-0 "/opt/pi/current/etc/bin/pi-find-applications" | grep -v PI_TOOLS_HOME | awk '{print $3}' | sed 's/.local//g' | sort | uniq | xargs echo -n `
+IGNORE_CONTAINERS=`echo -n "$APP_CONTAINERS" | tr ' ' '\n' | sed 's/^\(.*\)$/ | sed "s,\1 ,,g"/g' | tr '\n' ' '`
+CONTAINERS=`rocks list host | grep Container | awk -F : '{print $1}' | xargs echo -n`
+NON_APP_CONTAINERS=`echo -n echo -n $CONTAINERS $IGNORE_CONTAINERS | sh`
+
+echo Found that $APP_CONTAINERS are currently running network-based applications. They will be upgraded last
+
+
+for i in $NON_APP_CONTAINERS $APP_CONTAINERS; do 
+	ssh $i "rpm -q pi-cloud | grep $SVN_REVISION"
+        if [ $? -ne 0 ]; then
+	
+		while read -s -n 1 -t 1;do :;done
+		read -p "press any key to upgrade $i" -n 1 -s ; echo
+	
+		echo -e "\n***************************\nUpgrading $i to release $SVN_REVISION\n***************************\n"
+	
+		LEAFSET_SIZE=`ssh $i /opt/pi/current/etc/bin/pi-show-leafset | grep Unique | awk '{print $5}'`
+
+	
+		# This ssh command stops pi, then waits for up to 90 seconds, checking every 6 seconds to see if Pi has stopped
+		echo Stopping Pi
+		ssh $i 'service pi stop ; COUNT=0; while( [ $COUNT -lt 15 ]  ); do ps -ef | grep java | grep "com.bt.pi.core.Main" | grep -v grep &> /dev/null ; if [ $? -ne 0 ] ; then break ; fi ; sleep 6 ; COUNT=$[COUNT+1] ; done ; if [ $COUNT -eq 15 ] ; then exit 1; fi'
+		if [ $? -ne 0 ]; then
+			echo "Unable to stop pi on $i." 1>&2
+			exit 32
+		fi
+
+		echo Backing up storage
+		ssh $i "rm -rf /opt/pi/var/run/backupstorage ; mkdir -p /opt/pi/var/run/backupstorage ; cp -r /opt/pi/var/run/stor* /opt/pi/var/run/backupstorage"
+	
+		echo Upgrading pi rpm
+		ssh $i "rpm -e pi-cloud; yum -qy clean all; yum -qy install pi-cloud &> /dev/null"
+		if [ $? -ne 0 ]; then
+			echo "Failed to upgrade the pi rpm on $i." 1>&2
+			exit 64
+		fi
+
+		ssh $i "rpm -q pi-cloud | grep $SVN_REVISION"
+		if [ $? -ne 0 ]; then
+			echo "Failed to upgrade the pi rpm on $i." 1>&2
+			exit 128
+		fi
+
+		# This ssh command starts pi, then waits for up to 90 seconds, checking every 6 seconds to see if Pi has started
+		echo Starting Pi on $i
+		ssh $i 'service pi start ; COUNT=0; while( [ $COUNT -lt 15 ]  ); do ps -ef | grep java | grep "com.bt.pi.core.Main" | grep -v grep &> /dev/null ; if [ $? -eq 0 ] ; then break ; fi ; sleep 6 ; COUNT=$[COUNT+1] ; done ; if [ $COUNT -eq 15 ] ; then exit 1; fi'
+		if [ $? -ne 0 ]; then
+			echo "Unable to start pi on $i." 1>&2
+			exit 256
+		fi
+
+		sleep 10
+		# try every 10 seconds for up to 120 seconds to see if the vm-container has a leafset
+		if [ "$LEAFSET_SIZE" != "0" ]; then
+			COUNT=0
+			while( [ $COUNT -lt 12 ] ); do
+
+				NEWCOUNT=`ssh $i /opt/pi/current/etc/bin/pi-show-leafset 2> /dev/null | grep Unique | awk '{print $5}'`
+				if [ $? -eq 0 ] ; then
+					if [ -n "$NEWCOUNT" ] ; then
+						if [ $NEWCOUNT -ne 0 ]; then
+							break
+						fi			
+					fi
+				fi
+				sleep 10;
+				COUNT=$[COUNT+1]
+			done
+			if [ $COUNT -eq 12 ] ; then 
+		                echo "Pi did not establish a leafset on $i." 1>&2
+        	                exit 512
+			fi
+		fi
+
+
+		echo -e "\nUpgrade of $i to release $SVN_REVISION appears to have been successful\n"
+	fi
+done
+
+echo -e "\n***************************\nFinished upgrading all nodes to release $SVN_REVISION\n***************************\n"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

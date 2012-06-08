@@ -1,0 +1,127 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:sws="http://www.springframework.org/schema/web-services"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+   	   http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+       http://www.springframework.org/schema/web-services http://www.springframework.org/schema/web-services/web-services-1.5.xsd">
+
+	<context:component-scan base-package="com.bt.pi.ops.website"/>
+
+	<bean id="opsWebsiteResourceConfig" class="com.bt.pi.ops.website.SpringResourceConfig">
+		<constructor-arg index="0" value="com.bt.pi.ops.website" />
+		<property name="propertiesAndFeatures">
+			<map>
+				<entry key="com.sun.jersey.spi.container.ContainerRequestFilters">
+					<list>
+						<bean class="com.bt.pi.ops.website.HttpMethodFilter" />
+						<bean class="com.bt.pi.ops.website.HttpContentTypeFilter" />
+					</list>
+				</entry>
+			</map>
+		</property>
+	</bean>
+	
+	<bean id="opsWebsiteHttpServer" class="org.eclipse.jetty.server.Server"	init-method="start" destroy-method="stop">
+		<property name="connectors">
+			<list>
+				<bean class="com.bt.pi.ops.website.ClasspathSslSelectChannelConnector">
+			        <property name="Port" value="8443" />
+			        <property name="maxIdleTime" value="30000" />
+			        <property name="keystore" value="ssl_keystore" />
+			        <property name="password" value="password" />
+			        <property name="keyPassword" value="password" />
+				</bean>
+			</list>
+		</property>
+		<property name="handler">
+			<bean id="handlers" class="org.eclipse.jetty.server.handler.HandlerList">
+				<property name="handlers">
+					<list> 
+ 						<ref bean="resourceHandler"/>
+        	                   			
+						<bean class="org.eclipse.jetty.servlet.ServletContextHandler">
+							<property name="sessionHandler">
+								<bean class="org.eclipse.jetty.server.session.SessionHandler">
+									<constructor-arg index="0">
+										<bean class="org.eclipse.jetty.server.session.HashSessionManager" />
+									</constructor-arg>
+								</bean>
+							</property>
+							<property name="errorHandler">
+								<bean class="org.eclipse.jetty.servlet.ErrorPageErrorHandler">
+									<property name="errorPages">
+										<map>
+											<entry key="403" value="/403"/>
+											<entry key="404" value="/404"/>
+											<entry key="500" value="/500"/>
+										</map>
+									</property>
+								</bean>
+							</property>
+							<property name="servletHandler">
+								<bean class="org.eclipse.jetty.servlet.ServletHandler">
+									<property name="servlets">
+										<list>
+											<bean class="org.eclipse.jetty.servlet.ServletHolder">
+												<constructor-arg index="0">
+													<bean id="opsWebsiteServlet"
+														class="com.sun.jersey.spi.container.servlet.ServletContainer">
+														<constructor-arg index="0" ref="opsWebsiteResourceConfig" />
+													</bean>
+												</constructor-arg>
+												<property name="name" value="jersey" />
+											</bean> 
+										</list>
+									</property>
+									<property name="servletMappings">
+										<list>
+											<bean class="org.eclipse.jetty.servlet.ServletMapping">
+												<property name="servletName" value="jersey" />
+												<property name="pathSpec" value="/*" />
+											</bean>
+										</list>
+									</property>
+									<property name="filters">
+										<list>
+											<bean class="org.eclipse.jetty.servlet.FilterHolder">
+												<constructor-arg
+													ref="org.springframework.security.filterChainProxy" />
+												<property name="name" value="springSecurityFilterChain" />
+											</bean>
+										</list>
+									</property>
+									<property name="filterMappings">
+										<list>
+											<bean class="org.eclipse.jetty.servlet.FilterMapping">
+												<property name="filterName" value="springSecurityFilterChain" />
+												<property name="pathSpec" value="/*" />
+											</bean>
+										</list>
+									</property>
+								</bean>
+							</property>
+						</bean>
+						
+						<!-- This handler will deal with unhandled requests in the server. For requests
+								for favicon.ico, the Jetty icon is served. For reqests to '/' a 404 with
+								a list of known contexts is served -->
+						<bean class="org.eclipse.jetty.server.handler.DefaultHandler"/>
+					</list>
+				</property>
+			</bean>
+		</property>
+	</bean>
+
+	<bean id="resourceHandler" class="org.eclipse.jetty.server.handler.ResourceHandler">
+		<property name="directoriesListed" value="false"/>
+		<property name="resourceBase" value="current/www"/>
+		<property name="welcomeFiles">
+			<list>
+				<value>/redirect.html</value>				
+			</list>
+		</property>
+	</bean>
+
+	<import resource="securityContext.xml"/>
+	
+</beans>

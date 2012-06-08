@@ -1,0 +1,7 @@
+# This script will tell if a node is a supernode
+# Copy this script anywhere on a node and run it through groovyTelnet.sh script
+# /opt/pi/current/etc/bin/groovytelnet.sh checksn
+
+ra = appCtx['reportingApplication']
+activator = ra.getApplicationActivator()
+appstatus = activator.getApplicationStatus("pi-reporting-app")

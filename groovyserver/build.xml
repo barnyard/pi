@@ -1,0 +1,27 @@
+<project name="GroovyServer" basedir="." default="all">
+
+    <property file="build.properties" />
+
+	<path id="classpath">
+		<fileset dir="${lib.dir}" includes="**/*.jar" />
+	</path>
+    
+	<target name="all" depends="dist" description="All" />
+
+	<target name="dist" depends="compile">
+	    <jar jarfile="${dist.dir}/${name}.jar" compress="true" basedir="${classes.dir}"/>
+        <jar jarfile="${dist.dir}/${name}-sources.jar" compress="true" basedir="${src.dir}"/>
+	</target>
+
+	<target name="compile" depends="clean">
+		<javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath" debug="${debug}" />
+	</target>
+
+	<target name="clean">
+		<delete dir="${build.dir}" />
+		<delete dir="${dist.dir}" />
+		<mkdir dir="${classes.dir}" />
+		<mkdir dir="${dist.dir}" />
+	</target>
+
+</project>

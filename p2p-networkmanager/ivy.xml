@@ -1,0 +1,11 @@
+<ivy-module version="2.0" xmlns:m="http://ant.apache.org/ivy/maven">
+    <info organisation="bt" module="p2p-networkmanager" />
+    <configurations>
+    	<include file="${p2p-build.base}/ivyconfigurations.xml" />
+    </configurations>
+    <dependencies>
+        <dependency name="p2p-app" rev="latest.integration" conf="main->main;test->test" />
+
+        <dependency org="com.sun.jna" name="jna" rev="3.2.2b0" conf="main" />
+    </dependencies>
+</ivy-module>

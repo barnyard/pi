@@ -1,0 +1,45 @@
+#!/bin/sh
+# chkconfig: 2345 95 20
+# description: Start script for the p2p core
+# This script starts and stops the koala pastry node process.
+# processname: koalap2p
+APPNAME=p2p-core
+LOCKFILE=/var/run/$APPNAME.lock
+RUNAS=root
+case "$1" in
+  start)
+        # Start daemon.
+        if [ -e $LOCKFILE ]; then
+                echo Apparently $APPNAME is already running - if not, please delete $LOCKFILE
+                exit 1
+        fi
+
+        echo -n "Starting Koala P2P Node: "
+        chmod 0400 @INSTALL_DIR@/management.params
+        export CLUSTER=`cat /etc/hosts | grep -v $HOSTNAME | grep -v -- "#" | grep -v localhost | awk '{print $2}'`
+        su - $RUNAS -c "java -Xmx1024m -Dcom.sun.management.jmxremote.port=@JMXPORT@ -Djavax.net.ssl.keyStore=@INSTALL_DIR@/koalaJmx.keystore -Djavax.net.ssl.keyStorePassword=jmx1jmx2 -Djavax.net.ssl.trustStore=@INSTALL_DIR@/koalaJmx.truststore -Djavax.net.ssl.trustStorePassword=jmx1jmx2 -Dcom.sun.management.jmxremote.password.file=@INSTALL_DIR@/management.params -jar @INSTALL_DIR@/p2p-core.jar $@ &"
+        RETVAL=$?
+        echo OK
+        [ $RETVAL = 0 ] && touch $LOCKFILE
+        ;;
+  stop)
+        # Stop daemons.
+        echo -n "Shutting Koala P2P Node: "
+        su - $RUNAS -c "kill `ps auxww | grep p2p-core.jar | egrep -v grep | awk '{print $2}'`"
+        RETVAL=$?
+        echo
+        [ $RETVAL = 0 ] && rm -f $LOCKFILE
+        ;;
+  restart)
+        $0 stop
+        $0 start
+        ;;
+  condrestart)
+       [ -e $LOCKFILE ] && $0 restart
+       ;;
+  *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 1
+esac
+
+exit 0

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<log4j:configuration debug="true" xmlns:log4j="http://jakarta.apache.org/log4j/">
+
+	<appender name="P2P_LOGFILE" class="org.apache.log4j.RollingFileAppender">
+		<param name="file" value="var/log/p2p.log" />
+		<param name="append" value="true" />
+		<param name="MaxBackupIndex" value="10" />
+		<param name="MaxFileSize" value="50MB" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d %-5p [%t][%C{1}.%M() %L] [%X{TRANSACTION_ID}] - %m%n" />
+		</layout>
+		<param name="bufferedIO" value="true" />
+	</appender>
+
+	<appender name="PASTRY_LOGFILE" class="org.apache.log4j.RollingFileAppender">
+		<param name="file" value="var/log/pastry.log" />
+		<param name="append" value="true" />
+		<param name="MaxBackupIndex" value="10" />
+		<param name="MaxFileSize" value="50MB" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d %-5p [%t][%C{1}.%M() %L] [%X{TRANSACTION_ID}] - %m%n" />
+		</layout>
+		<param name="bufferedIO" value="true" />
+	</appender>
+
+	<logger name="com.bt.pi.core" additivity="false">
+		<level value="info" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</logger>
+
+	<logger name="com.bt.pi.core.application.health" additivity="false">
+		<level value="debug" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</logger>
+
+	<logger name="com.bt.pi.app.common.dataaccess" additivity="false">
+		<level value="info" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</logger>
+
+	<logger name="com.bt" additivity="false">
+		<level value="debug" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</logger>
+
+	<logger name="rice.pastry" additivity="false">
+		<level value="WARN" />
+		<appender-ref ref="PASTRY_LOGFILE" />
+	</logger>
+
+	<logger name="com.ragstorooks" additivity="false">
+		<level value="info" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</logger>
+
+	<logger name="com.bt.pi.core.util.common.CommandRunner" additivity="false">
+		<level value="warn" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</logger>
+
+	<logger name="com.bt.pi.app.networkmanager.iptables" additivity="false">
+		<level value="info" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</logger>
+
+	<root>
+		<priority value="warn" />
+		<appender-ref ref="P2P_LOGFILE" />
+	</root>
+
+</log4j:configuration>

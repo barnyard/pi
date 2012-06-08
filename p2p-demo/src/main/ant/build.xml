@@ -1,0 +1,27 @@
+<project name="p2p-demo" default="run">
+	<path id="project.classpath">
+		<fileset dir="lib" includes="*.jar" />
+	</path>
+
+	<target name="clean">
+		<delete dir="build" />
+	</target>
+
+	<target name="compile" depends="clean">
+		<mkdir dir="build/classes" />
+		<javac destdir="build/classes" srcdir="src/main/java" classpathref="project.classpath" />
+		<copy todir="build/classes">
+			<fileset dir="src/main/resources"/>
+		</copy>
+	</target>
+
+	<target name="run" depends="compile">
+		<java classname="com.bt.pi.core.Main" fork="yes">
+			<classpath>
+				<path refid="project.classpath"/>
+				<pathelement location="build/classes"/>
+			</classpath>
+		</java>
+	</target>
+
+</project>

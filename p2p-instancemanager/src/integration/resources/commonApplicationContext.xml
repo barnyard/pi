@@ -1,0 +1,116 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+                http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+                http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.5.xsd
+                http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd
+                http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.0.xsd">
+
+	<context:component-scan base-package="com.bt.pi">
+		<context:include-filter type="assignable" expression="com.bt.pi.core.cli.commands.ManagementCommand" />
+		<context:include-filter type="assignable" expression="com.bt.pi.core.message.KoalaMessageBase" />
+		<context:include-filter type="assignable" expression="com.bt.pi.core.entity.PiEntity" />
+		<context:exclude-filter type="assignable" expression="com.bt.pi.core.util.common.CommandRunner" />
+		<context:exclude-filter type="assignable" expression="com.bt.pi.core.mail.MailSender" />
+		<context:exclude-filter type="assignable" expression="com.bt.pi.app.common.os.FileManager" />
+		<context:exclude-filter type="assignable" expression="com.bt.pi.app.common.os.DeviceUtils" />
+		<context:exclude-filter type="assignable" expression="com.bt.pi.app.networkmanager.NetworkManagerApplication" />
+		<context:exclude-filter type="assignable" expression="com.bt.pi.app.instancemanager.libvirt.LibvirtConnection" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.core.dht.*MyDeletablePiEntity" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.core.past.*MyDhtPiEntity" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.core.dht.*MyPiEntity" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.core.dht.*MyDhtRWPiEntity" />
+		<context:exclude-filter type="regex" expression="com.bt.pi.core.parser.*Test.*Entity.*" />
+	</context:component-scan>
+
+	<import resource="applicationContext-p2p-instancemanager-integration.xml" />
+
+	<bean id="log4jFileResource" class="org.springframework.core.io.ClassPathResource">
+		<constructor-arg value="log4j.xml" />
+	</bean>
+
+	<util:property-path id="log4jFile" path="log4jFileResource.file" />
+
+	<bean id="freeMarkerConfiguration" class="org.springframework.ui.freemarker.FreeMarkerConfigurationFactoryBean">
+		<property name="templateLoaderPath" value="/" />
+		<property name="preferFileSystemAccess" value="false"/>
+	</bean>
+
+	<util:properties id="properties"
+		location="classpath:p2p.integration.properties" />
+
+	<util:list id="configLocations">
+		<value>classpath:p2p.integration.properties</value>
+	</util:list>
+
+	<bean class="com.bt.pi.core.conf.PropertyAnnotationAndPlaceholderConfigurer">
+		<property name="properties" ref="properties" />
+	</bean>
+
+	<bean class="com.bt.pi.core.application.watcher.task.TaskProcessingQueueWatcherPropertiesLoader">
+		<property name="properties" ref="properties" />
+		<property name="locations" ref="configLocations" />
+	</bean>
+
+	<bean id="taskExecutor"
+		class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+		<property name="corePoolSize" value="5" />
+		<property name="maxPoolSize" value="10" />
+	</bean>
+
+	<bean id="scheduledExecutorService"
+		class="org.springframework.scheduling.concurrent.ScheduledExecutorFactoryBean">
+		<property name="continueScheduledExecutionAfterException"
+			value="true" />
+		<property name="poolSize" value="20" />
+	</bean>
+
+	<bean id="generalCache" class="com.bt.pi.core.dht.cache.DhtCache">
+		<property name="cache" ref="generalEhCache" />
+	</bean>
+
+	<bean id="generalBlockingCache" class="com.bt.pi.core.dht.cache.BlockingDhtCache">
+		<property name="cache" ref="generalEhCache" />
+	</bean>
+
+	<bean id="ehCacheManager"
+		class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean" />
+
+	<bean id="generalEhCache" class="org.springframework.cache.ehcache.EhCacheFactoryBean">
+		<property name="cacheName" value="generalEhCache" />
+		<property name="cacheManager" ref="ehCacheManager" />
+		<property name="maxElementsInMemory" value="100" />
+		<property name="overflowToDisk" value="false" />
+		<property name="eternal" value="false" />
+		<property name="timeToLive" value="600" />
+		<property name="timeToIdle" value="600" />
+	</bean>
+
+	<bean id="systemResourceStateCache" class="org.springframework.cache.ehcache.EhCacheFactoryBean">
+		<property name="cacheName" value="systemResourceStateCache" />
+		<property name="cacheManager" ref="ehCacheManager" />
+		<property name="maxElementsInMemory" value="100" />
+		<property name="overflowToDisk" value="false" />
+		<property name="eternal" value="false" />
+		<property name="timeToLive" value="900" />
+		<property name="timeToIdle" value="900" />
+	</bean>
+
+	<bean id="dhtClientFactory" class="com.bt.pi.core.dht.DhtClientFactory">
+		<lookup-method bean="updateAwareDhtWriter" name="createEmptyBlockingWriter" />
+		<lookup-method bean="simpleDhtReader" name="createEmptyBlockingReader" />
+	</bean>
+
+	<util:list id="errorLogAppenderFilterList">
+		<value>foo@bar.com</value>
+	</util:list>
+
+	<task:annotation-driven scheduler="myScheduler" />
+	<task:scheduler id="myScheduler" pool-size="10" />
+
+	<bean id="springMailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+  		<property name="host" value="localhost"/>
+	</bean>
+</beans>

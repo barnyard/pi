@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE suppressions PUBLIC
+    "-//Puppy Crawl//DTD Suppressions 1.0//EN"
+    "http://www.puppycrawl.com/dtds/suppressions_1_0.dtd">
+    
+<suppressions>
+	<suppress checks="IllegalCatchCheck" files="DhcpManager.java"/>
+    <suppress checks="IllegalCatchCheck" files="PiIdLookupService.java"/>
+    <suppress checks="IllegalCatchCheck" files="PiEntityLookupService.java"/>
+    <suppress checks="ParameterNumber" files="PiSeeder.java"/>
+    <suppress checks="ParameterNumber" files="ImageSeeder.java"/>
+    <suppress checks="ParameterNumber" files="Image.java"/>
+    <suppress checks="ClassFanOutComplexity" files="AbstractManagedAddressingPiApplication.java"  />
+</suppressions>

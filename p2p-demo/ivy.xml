@@ -1,0 +1,12 @@
+<ivy-module version="2.0" xmlns:m="http://ant.apache.org/ivy/maven">
+	<info organisation="bt" module="p2p-demo" />
+	<configurations>
+		<include file="${p2p-build.base}/ivyconfigurations.xml" />
+	</configurations>
+	<publications>
+		<artifact name="p2p-demo" type="zip" conf="main" />
+	</publications>
+	<dependencies>
+		<dependency name="p2p-core" rev="latest.integration" conf="main->main;test->test" />
+	</dependencies>
+</ivy-module>

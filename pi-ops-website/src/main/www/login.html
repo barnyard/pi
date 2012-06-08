@@ -1,0 +1,21 @@
+<html>
+	<head>
+		<title>The Pi Management Super Cool Tool - Log In</title>		
+		<link rel="stylesheet" type="text/css" href="default.css" />
+	</head>
+	<body onload='document.f.j_username.focus();'> 
+		<form name='f' action='/j_spring_security_check' method='POST' style="text-align: center;"> 
+ 			<img src="pi-logo.png"/> 
+		 	<h1>
+		 		Welcome to the Pi Management tool
+		 		<br/>
+		 	</h1>
+		 	<div>
+				<p>Username:<input type='text' name='j_username' value=''></p> 
+				<p>Password:<input type='password' name='j_password'/></p> 
+				<input name="submit" type="submit"/>
+				<input name="reset" type="reset"/>				
+		 	</div>
+		</form>
+	</body>
+</html>

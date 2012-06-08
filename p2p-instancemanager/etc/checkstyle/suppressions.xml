@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE suppressions PUBLIC
+    "-//Puppy Crawl//DTD Suppressions 1.0//EN"
+    "http://www.puppycrawl.com/dtds/suppressions_1_0.dtd">
+    
+<suppressions>
+    <suppress checks="IllegalCatchCheck" files="RunInstanceHandler.java"/>
+    <suppress checks="IllegalCatchCheck" files="RunningInstanceInteractionHandler"/>
+    <suppress checks="IllegalCatchCheck" files="BuildInstanceRunner.java"/> 
+    <suppress checks="IllegalCatchCheck" files="TerminateInstanceHandler.java"/>
+    <suppress checks="IllegalCatchCheck" files="RunInstanceContinuation.java"/>    
+    <suppress checks="IllegalCatchCheck" files="AttachVolumeHandler.java" />
+    <suppress checks="IllegalCatchCheck" files="DetachVolumeHandler.java" />
+    <suppress checks="IllegalCatchCheck" files="CreateSnapshotHandler.java" />
+    <suppress checks="IllegalCatchCheck" files="XenRefreshHandler.java" />
+    <suppress checks="IllegalCatchCheck" files="AnycastHandler.java" />
+    <suppress checks="IllegalCatchCheck" files="LocalStorageInstanceHandler.java"/>
+    <suppress checks="IllegalCatchCheck" files="VolumeBackupHandler.java" />
+</suppressions>

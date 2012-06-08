@@ -1,0 +1,13 @@
+<ivy-module version="2.0" xmlns:m="http://ant.apache.org/ivy/maven">
+	<info organisation="bt" module="p2p-instancemanager" />
+	<configurations>
+		<include file="${p2p-build.base}/ivyconfigurations.xml" />
+	</configurations>
+	<publications>
+		<artifact name="p2p-instancemanager" type="jar" conf="main" />
+		<artifact name="p2p-instancemanager-testing" type="jar" conf="test" />
+	</publications>
+	<dependencies>
+		<dependency name="p2p-networkmanager" rev="latest.integration" conf="main->main;test->test" />
+	</dependencies>
+</ivy-module>

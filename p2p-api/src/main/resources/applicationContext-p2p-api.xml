@@ -1,0 +1,71 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:sws="http://www.springframework.org/schema/web-services"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+   	   http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+       http://www.springframework.org/schema/web-services http://www.springframework.org/schema/web-services/web-services-1.5.xsd">
+
+	<context:component-scan base-package="com.bt.pi.api" />
+
+	<bean id="wsSecurityEngine" class="org.apache.ws.security.WSSecurityEngine" factory-method="getInstance" />
+
+	<bean id="marshaller" class="org.springframework.oxm.xmlbeans.XmlBeansMarshaller" />
+
+	<bean id="annotationMapping" class="org.springframework.ws.server.endpoint.mapping.PayloadRootAnnotationMethodEndpointMapping">
+		<property name="interceptors">
+			<list>
+				<bean class="org.springframework.ws.soap.server.endpoint.interceptor.SoapEnvelopeLoggingInterceptor" />
+				<bean class="org.springframework.ws.server.endpoint.interceptor.PayloadLoggingInterceptor" />
+			</list>
+		</property>
+	</bean>
+
+	<bean class="org.springframework.ws.soap.server.endpoint.SoapFaultAnnotationExceptionResolver" />
+
+	<sws:marshalling-endpoints />
+	
+
+	<bean id="messageFactory" class="org.springframework.ws.soap.saaj.SaajSoapMessageFactory" />
+
+	<bean id="messageReceiver" class="org.springframework.ws.soap.server.SoapMessageDispatcher">
+		<property name="endpointMappings" ref="annotationMapping" />
+	</bean>
+
+	<bean id="apiHttpServer" class="org.springframework.remoting.support.SimpleHttpServerFactoryBean">
+		<property name="contexts">
+			<map>
+				<entry key="/" value-ref="soapHandler" />
+			</map>
+		</property>
+		<property name="port" value="${api.port}" />
+		<property name="filters">
+			<list>
+				<bean class="com.bt.pi.api.servlet.RestQueryFilter" />
+			</list>
+		</property>
+	</bean>
+
+	<bean id="apiHttpsServer" class="com.bt.pi.api.http.SimpleHttpsServerFactoryBean">
+		<property name="contexts">
+			<map>
+				<entry key="/" value-ref="soapHandler" />
+			</map>
+		</property>
+		<property name="hostname" value="${api.hostname}" />
+		<property name="port" value="${api.https.port}" />
+		<property name="keyStoreLocation" value="file:${keystore.location}" />
+		<property name="password" value="${keystore.password}" />
+		<property name="filters">
+			<list>
+				<bean class="com.bt.pi.api.servlet.RestQueryFilter" />
+			</list>
+		</property>
+	</bean>
+
+	<bean id="soapHandler" class="org.springframework.ws.transport.http.WebServiceMessageReceiverHttpHandler">
+		<property name="messageFactory" ref="messageFactory" />
+		<property name="messageReceiver" ref="messageReceiver" />
+	</bean>
+
+	<bean id="jmxAttributeSource" class="org.springframework.jmx.export.annotation.AnnotationJmxAttributeSource" />
+</beans>

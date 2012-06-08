@@ -1,0 +1,17 @@
+<ivysettings>
+  <!-- download from Hudson, upload to SFTP on Hudson master -->
+	<property name="ivy.shared.root" value="http://${hudson.ip.address}/ivy/shared" />
+	<property name="ivy.publish.root" value="sftp://ivy@${hudson.ip.address}/var/www/html/ivy/shared" />
+
+	<resolvers>
+    <url name="shared">
+      <ivy pattern="${ivy.shared.root}/${ivy.shared.pattern}" />
+      <artifact pattern="${ivy.shared.root}/${ivy.shared.pattern}" />
+    </url>
+
+    <sftp name="publish" keyFile="${p2p-build.base}/ivy_key">
+      <ivy pattern="${ivy.publish.root}/${ivy.shared.pattern}" />
+      <artifact pattern="${ivy.publish.root}/${ivy.shared.pattern}" />
+    </sftp>
+	</resolvers>
+</ivysettings>

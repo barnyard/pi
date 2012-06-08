@@ -1,0 +1,85 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+                http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+                http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.5.xsd
+                http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd">
+
+	<context:component-scan base-package="com.bt.pi.integration.applications" />
+	
+	<bean id="nodePhysicalHealthChecker" class="com.bt.pi.integration.applications.NodePhysicalHealthChecker"/>
+
+	<bean id="commandRunner" class="com.bt.pi.integration.util.StubIntegrationCommandRunner">
+		<property name="commandExecutor" ref="stubCommandExecutor" />
+	</bean>
+
+	<bean id="InstanceManager.DetachVolumeHandler" class="com.bt.pi.integration.util.InstanceManagerDetachVolumeHanderStub"/>
+
+	<bean id="stubCommandExecutor" class="com.bt.pi.core.testing.StubCommandExecutor">
+		<constructor-arg index="0" ref="taskExecutor" />
+	</bean>
+
+	<bean id="libvirtConnection" class="com.bt.pi.app.instancemanager.testing.StubLibvirtConnection" />
+		
+	<bean id="volumeBackupHandler" class="com.bt.pi.integration.util.StubVolumeBackupHandler" />
+
+	<bean class="com.bt.pi.integration.util.BeanPropertiesMunger" />
+
+	<util:properties id="properties"
+		location="classpath:p2p.integration.properties" />
+
+	<bean id="testApplication1" class="com.bt.pi.integration.applications.RegionScopedTestApplication">
+		<property name="applicationName" value="testApplication1" />
+		<property name="preferablyExcludedApplicationList" value="testApplication2,testApplication3,testApplication4,testApplication5,testApplication6,testApplication7" />
+	</bean>
+
+	<bean id="testApplication2" class="com.bt.pi.integration.applications.RegionScopedTestApplication">
+		<property name="applicationName" value="testApplication2" />
+		<property name="preferablyExcludedApplicationList" value="testApplication1,testApplication3,testApplication4,testApplication5,testApplication6,testApplication7" />
+	</bean>
+
+	<bean id="testApplication3" class="com.bt.pi.integration.applications.RegionScopedTestApplication">
+		<property name="applicationName" value="testApplication3" />
+		<property name="preferablyExcludedApplicationList" value="testApplication1,testApplication2,testApplication4,testApplication5,testApplication6,testApplication7" />
+	</bean>
+
+	<bean id="testApplication4" class="com.bt.pi.integration.applications.RegionScopedTestApplication">
+		<property name="applicationName" value="testApplication4" />
+		<property name="preferablyExcludedApplicationList" value="testApplication1,testApplication2,testApplication3,testApplication5,testApplication6,testApplication7" />
+	</bean>
+
+	<bean id="testApplication5" class="com.bt.pi.integration.applications.RegionScopedTestApplication">
+		<property name="applicationName" value="testApplication5" />
+		<property name="preferablyExcludedApplicationList" value="testApplication1,testApplication2,testApplication3,testApplication4,testApplication6,testApplication7" />
+	</bean>
+
+	<bean id="testApplication6" class="com.bt.pi.integration.applications.RegionScopedTestApplication">
+		<property name="applicationName" value="testApplication6" />
+		<property name="preferablyExcludedApplicationList" value="testApplication1,testApplication2,testApplication3,testApplication4,testApplication5,testApplication7" />
+	</bean>
+
+	<bean id="testApplication7" class="com.bt.pi.integration.applications.RegionScopedTestApplication">
+		<property name="applicationName" value="testApplication7" />
+		<property name="preferablyExcludedApplicationList" value="testApplication1,testApplication2,testApplication3,testApplication4,testApplication5,testApplication6" />
+	</bean>
+
+	<bean id="testApplication11" class="com.bt.pi.integration.applications.AvailabilityZoneScopedTestApplication">
+		<property name="applicationName" value="testApplication11" />
+		<property name="preferablyExcludedApplicationList" value="testApplication12,testApplication13" />
+	</bean>
+
+	<bean id="testApplication12" class="com.bt.pi.integration.applications.AvailabilityZoneScopedTestApplication">
+		<property name="applicationName" value="testApplication12" />
+		<property name="preferablyExcludedApplicationList" value="testApplication11,testApplication13" />
+	</bean>
+
+	<bean id="testApplication13" class="com.bt.pi.integration.applications.AvailabilityZoneScopedTestApplication">
+		<property name="applicationName" value="testApplication13" />
+		<property name="preferablyExcludedApplicationList" value="testApplication11,testApplication12" />
+	</bean>
+
+	<util:property-path id="log4jFile" path="log4jFileResource.file" />
+	
+	<bean id="mailSender" class="com.bt.pi.app.instancemanager.testing.StubMailSender" />
+</beans>

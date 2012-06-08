@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:aop="http://www.springframework.org/schema/aop"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans
+              http://www.springframework.org/schema/beans/spring-beans.xsd
+              http://www.springframework.org/schema/aop
+              http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+<bean id="propertyPlaceholderConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+	<property name="properties">
+		<props>
+			<prop key="numberOfRuns">50</prop>
+			<prop key="numberOfConcurrentStarts">5</prop>							
+		</props>
+	</property>
+	<property name="systemPropertiesModeName">
+		<value>SYSTEM_PROPERTIES_MODE_OVERRIDE</value>
+	</property>
+</bean>
+
+  <!-- Scenario runner -->
+  <bean id="scenarioRunner" class="com.ragstorooks.testrr.Runner">
+  	<property name="numberOfRuns" value="${numberOfRuns}" />
+  	<property name="numberOfConcurrentStarts" value="${numberOfConcurrentStarts}" />
+  	<property name="synchronizedScheduling" value="true" />
+  	<property name="synchronizeWaitMilliSeconds" value="10000" />
+  	<property name="coolDownPeriod" value="1200000" />
+  	<property name="useDeterministicNumberOfRuns" value="false" />
+	<property name="scheduledExecutorService" ref="scheduledThreadPoolExecutor" />
+  </bean>
+  
+  <bean id="scheduledThreadPoolExecutor" class="java.util.concurrent.ScheduledThreadPoolExecutor">
+    <constructor-arg index="0" value="100" />
+  </bean>
+
+  <bean id="scenarioScheduledThreadPoolExecutor" class="java.util.concurrent.ScheduledThreadPoolExecutor">
+    <constructor-arg index="0" value="10" />
+  </bean>
+
+
+  <!-- Scenario beans -->
+</beans>

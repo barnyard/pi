@@ -1,0 +1,18 @@
+<ivysettings>
+
+  <!-- download from Hudson, upload to ~/.ivy2/shared -->
+	<property name="ivy.shared.root" value="http://${hudson.ip.address}/ivy/shared" />
+	<property name="ivy.publish.root" value="${ivy.default.ivy.user.dir}/shared" />
+
+	<resolvers>
+    <url name="shared">
+      <ivy pattern="${ivy.shared.root}/${ivy.shared.pattern}" />
+      <artifact pattern="${ivy.shared.root}/${ivy.shared.pattern}" />
+    </url>
+
+    <filesystem name="publish">
+      <ivy pattern="${ivy.publish.root}/${ivy.shared.pattern}" />
+      <artifact pattern="${ivy.publish.root}/${ivy.shared.pattern}" />
+    </filesystem>
+	</resolvers>
+</ivysettings>

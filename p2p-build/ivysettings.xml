@@ -1,0 +1,19 @@
+<ivysettings>
+	<settings defaultResolver="default"/>
+	
+	<property name="ivy.shared.pattern" value="[organisation]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext]" />
+	<property name="ivy.mode" value="default" override="false" />
+	<property name="hudson.ip.address" value="127.0.0.1" />
+	
+	<resolvers>
+		<!-- point public at p2p-build svn:externals -->
+		<filesystem name="public">
+			<artifact pattern="${p2p-build.base}/repo/${ivy.shared.pattern}" />
+		</filesystem>
+	</resolvers>
+
+	<include url="${ivy.default.settings.dir}/ivysettings-local.xml"/>
+	<include url="${p2p-build.base}/ivysettings-${ivy.mode}.xml"/>
+	<include url="${ivy.default.settings.dir}/ivysettings-main-chain.xml"/>
+	<include url="${ivy.default.settings.dir}/ivysettings-default-chain.xml"/>
+</ivysettings>

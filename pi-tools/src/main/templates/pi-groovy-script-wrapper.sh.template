@@ -1,0 +1,23 @@
+#!/bin/sh
+
+JAVA_CMD=`which java`
+if [ -z $JAVA_CMD ]; then
+	echo "java not found"
+	exit 1
+fi
+
+[ -e ~/.pirc ] && export `grep "^PI_TOOLS_HOME" ~/.pirc`
+
+if [ -z $PI_TOOLS_HOME ]; then
+	echo "Variable PI_TOOLS_HOME not set - Setting it to /opt/pi/current/etc. Otherwise please set it explicitly, or in ~/.pirc"
+	export PI_TOOLS_HOME=/opt/pi/current/etc
+fi
+
+BIN_DIR=$PI_TOOLS_HOME/bin
+SRC_DIR=$PI_TOOLS_HOME/groovy
+LIB_DIR=$PI_TOOLS_HOME/lib
+CLASSPATH=$SRC_DIR:$LIB_DIR/*:$PI_TOOLS_HOME/../lib/*:$CLASSPATH
+
+cd $SRC_DIR
+$JAVA_CMD -cp $CLASSPATH groovy.lang.GroovyShell @GROOVY_SCRIPT_FILE@.groovy "$@"
+cd $BIN_DIR

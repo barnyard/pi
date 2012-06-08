@@ -1,0 +1,9 @@
+<ivy-module version="2.0">
+	<info organisation="bt" module="p2p-volumemanager" />
+	<configurations>
+		<include file="${p2p-build.base}/ivyconfigurations.xml" />
+	</configurations>
+	<dependencies>
+		<dependency name="p2p-instancemanager" rev="latest.integration" conf="main->main;test->test" />
+	</dependencies>
+</ivy-module>

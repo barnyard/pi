@@ -1,0 +1,35 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context" xmlns:sws="http://www.springframework.org/schema/web-services"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+       http://www.springframework.org/schema/web-services http://www.springframework.org/schema/web-services/web-services-1.5.xsd">
+
+	<bean id="userCollection" class="com.bt.koala.api.entities.UserCollection">
+		<property name="users" ref="userList"/>
+	</bean>
+
+	<bean id="userList" class="java.util.ArrayList">
+		<constructor-arg>
+			<list>
+				<ref bean="user"/>
+			</list>
+		</constructor-arg>
+	</bean>
+
+	<bean id="user" class="com.bt.pi.app.common.entities.User">
+		<property name="username" value="jon"/>
+		<property name="apiAccessKey" value="Y7HqdJgHC7aYIbnxPRNU1A"/>
+		<property name="apiSecretKey" value="sIL03bvLbAa__Oa7Oe5Ssuhjalg6m-cd0RDwOg"/>
+	</bean>
+	
+	
+	<bean id="avabilityZonesAndRegionsService" class="com.bt.koala.api.service.AvabilityZonesAndRegionsIntegrationImpl"/>
+	<bean id="elasticBlockStorageService" class="com.bt.koala.api.service.ElasticBlockStorageIntegrationImpl"/>
+	<bean id="elasticIpAddressesService" class="com.bt.koala.api.service.ElasticIpAddressesIntegrationImpl"/>
+	<bean id="imageService" class="com.bt.koala.api.service.ImageServiceIntegrationImpl"/>
+	<bean id="securityGroupService" class="com.bt.koala.api.service.SecurityGroupServiceIntegrationImpl"/>				
+	<bean id="keyPairsService" class="com.bt.koala.api.service.KeyPairsServiceIntegrationImpl"/>
+	<bean id="apiApplicationManager" class="com.bt.koala.api.service.ApiApplicationManager"/>
+	<bean id="userService" class="com.bt.koala.api.service.UserService"/>
+	<bean id="instancesService" class="com.bt.koala.api.service.InstancesServiceIntegrationImpl"/>	
+	<bean id="userCertificateHelper" class="com.bt.pi.api.service.UserCertificateHelper"/> 
+</beans>

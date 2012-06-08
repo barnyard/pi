@@ -1,0 +1,13 @@
+{
+	"defaults" : {
+		"piCloudVersion" : 0.9,
+		"installDir" : "/opt/pi",
+		"logDir" : "var/log",
+		"bindRegex" : "^10.*",
+		"bootstraps" : "127.0.0.1:4524",
+		"jmxPort" : 45243,
+		"httpPort" : 8585,
+		"instanceBuriedIntervalMillis" : 259200000,	/* 3 days */
+		"numberOfReportingAppSupernodesPerAvailabilityZone" : 4
+	}
+}

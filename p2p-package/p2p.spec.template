@@ -1,0 +1,48 @@
+Summary:      Koala P2P Node
+Name:         KoalaP2P
+Version:      @VERSION@
+Release:      @RELEASE@
+License:      Restricted
+Group:        Applications/System
+Vendor:       BT
+URL:          http://www.bt.com
+Packager:     Joshua Watkins
+Prefix: /opt
+
+%description
+KoalaP2P is a p2p node network built on top of pastry.
+
+%prep 
+rm -f /etc/init.d/koalap2p
+
+%build
+rm -f /etc/init.d/koalap2p
+
+%install
+mkdir -p @INSTALL_DIR@
+echo INSTALL
+
+%clean
+pwd
+
+%files
+
+%config 
+@INSTALL_DIR@
+
+%post
+echo POST
+echo Running P2P Environment Config
+CLUSTER=`cat /etc/hosts | grep -v $HOSTNAME | grep -v -- "#" | grep -v localhost | grep -v vm-container | awk '{print $2}'`
+echo ${CLUSTER}
+echo ${CLUSTER} | sed "s/^$/localhost/g" | awk '{print "ln -sf /opt/koala/p2p/scripts/koalap2p." $1 ".sh /etc/init.d/koalap2p"}'| sh
+echo ${CLUSTER} | sed "s/^$/localhost/g" | awk '{print "cp -f /opt/koala/p2p/koala." $1 ".params /opt/koala/p2p/koala.params"}'| sh
+chmod +x /etc/init.d/koalap2p
+find /opt/koala/p2p/applications -name "*.sh" | xargs chmod +x
+chkconfig --add koalap2p
+
+%postun
+if [ "$1" = "0" ]; 
+then
+	rm -rf @INSTALL_DIR@
+fi

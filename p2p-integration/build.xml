@@ -1,0 +1,19 @@
+<project name="p2p-integration" default="default">
+
+    <!-- user-specific properties + default values -->
+    <property file="properties/${user.name}.properties" />
+    <property file="properties/build.properties" />
+
+	<import file="${p2p-build.base}/build.xml" />
+
+	<!-- we need to ensure that the pi-sss jar is in front of the Grizzly jar as we have overridden a class to stop 
+	it bitching about duplicate Content-Length headers -->
+	<path id="integration.classpath">
+		<pathelement location="build/classes/integration" />
+		<fileset dir="lib/test" includes="**/pi-sss*.jar" />
+		<path refid="test.classpath" />
+	</path>
+
+	<!-- no conf:main jars in Ivy, therefore no lib/main -->
+    <path id="main.classpath" />
+</project>
