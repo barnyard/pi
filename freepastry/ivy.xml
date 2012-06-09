@@ -9,6 +9,7 @@
 		<artifact name="freepastry" type="jar" conf="main" />
 	</publications>
 	<dependencies>
+		<dependency org="pastry" name="pastry" rev="1" conf="main" />
 		<dependency org="bouncycastle" name="bouncycastle" rev="1.0" conf="main" />
 		<dependency org="sbbi-upnplib" name="sbbi-upnplib" rev="1.0.4" conf="main" />
 		<dependency org="commons-jxpath" name="commons-jxpath" rev="1.1" conf="main" />
