@@ -1,0 +1,25 @@
+<project>
+	<property name="unit.test.report.dir" value="reports/junit" />
+	<property name="unit.test.report.dir.xml" value="reports/junit/xml" />
+	<target name="unit.test" >
+		<mkdir dir="${unit.test.report.dir}" />
+		<mkdir dir="${unit.test.report.dir.xml}" />
+
+		<junit printsummary="true" haltonfailure="true" >
+			<batchtest fork="yes" todir="${unit.test.report.dir.xml}" >
+				<fileset dir="build/classes/test">
+			        	<include name="**/*Test.class" />
+				</fileset>
+			</batchtest>
+			<formatter type="xml" />
+			<classpath refid="test.classpath" />
+		</junit>
+		<junitreport todir="${unit.test.report.dir}">
+			<fileset dir="${unit.test.report.dir.xml}">
+				<include name="TEST-*.xml" />
+			</fileset>
+			<report todir="${unit.test.report.dir}" />
+		</junitreport>
+	</target>
+	
+</project>
