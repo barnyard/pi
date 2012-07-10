@@ -47,6 +47,8 @@ public class KoalaJsonParserTest {
     JSONObject machinehealthpayload;
     private ObjectMapper mockMapper;
 
+    public KoalaJsonParserTest(){}
+
     @Before
     public void before() throws JSONException {
         pojo = new TestPayload(number, nodeHandle, computer, number, number, cpu);
@@ -80,7 +82,7 @@ public class KoalaJsonParserTest {
     public void testGetJsonDoesNotMarshalNulls() throws Exception {
         // setup
         @SuppressWarnings("unused")
-        final class MyTest {
+        final class MyTestClass {
             public String getNonNullString() {
                 return "helloworld";
             }
@@ -89,7 +91,7 @@ public class KoalaJsonParserTest {
                 return null;
             }
         }
-        MyTest test = new MyTest();
+        MyTestClass test = new MyTestClass();
 
         // act
         String json = StringUtils.deleteWhitespace(koalaJsonParser.getJson(test));
